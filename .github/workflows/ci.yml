@@ -170,12 +170,10 @@ jobs:
         env:
           PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
         run: |
-          psql "$PGURL" -v ON_ERROR_STOP=1 <<'SQL'
-          -- crea un usuario fake en auth.users y úsalo como editor
-          insert into auth.users default values returning id \gset
-          insert into catalogo_profiles(user_id, role)
-          values (:'id','editor') on conflict do nothing;
-          SQL
+          # crear usuario en auth.users y su perfil editor
+          EDITOR_UID="$(psql "$PGURL" -Atq -c "insert into auth.users default values returning id")"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -c "insert into catalogo_profiles(user_id, role) values ('$EDITOR_UID','editor') on conflict do nothing"
+          echo "EDITOR_UID=$EDITOR_UID" >> "$GITHUB_ENV"
 
       - name: Install deps and run DB tests
         shell: sh
@@ -188,4 +186,5 @@ jobs:
           npm run test:db
         env:
           DATABASE_URL: postgresql://app:app@postgres:5432/catalogo_test
+          EDITOR_UID: ${{ env.EDITOR_UID }}
 

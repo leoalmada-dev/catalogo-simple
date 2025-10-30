@@ -33,7 +33,6 @@ test('vista pública devuelve filas con min_price', async () => {
 
 test('RLS: anon NO inserta categorías', async () => {
   await setUid(null);
-
   const slug = 'test-cat-' + Date.now();
   let denied = false;
   try {
@@ -46,15 +45,17 @@ test('RLS: anon NO inserta categorías', async () => {
 });
 
 test('RLS: editor SÍ crea producto', async () => {
-  // usamos un editor ya existente (bootstrap en el workflow)
-  const r = await pool.query(`select user_id from catalogo_profiles where role='editor' limit 1;`);
-  if (r.rowCount === 0) throw new Error('No hay editor bootstrapeado');
-  const uid: string = r.rows[0].user_id;
+  const uid = process.env.EDITOR_UID;
+  if (!uid) throw new Error('EDITOR_UID no seteado en CI');
 
   await setUid(uid);
 
   const slug = 'test-prod-' + Date.now();
-  await pool.query(`insert into catalogo_products(slug, name, status) values ($1,'Producto test','draft')`, [slug]);
+  await pool.query(
+    `insert into catalogo_products(slug, name, status)
+     values ($1,'Producto test','draft')`,
+    [slug]
+  );
 
   const ok = await pool.query(`select 1 from catalogo_products where slug = $1`, [slug]);
   expect(ok.rowCount).toBe(1);
