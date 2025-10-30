@@ -155,13 +155,16 @@ jobs:
             end if;
           end $$;
 
-          -- permisos necesarios para los smoke tests
-          grant usage on schema public, app to app;
+          -- USAGE en esquemas necesarios (RLS usa auth.uid())
+          grant usage on schema public, app, auth to app;
+
+          -- Permisos básicos en public (RLS decidirá si deja escribir)
           grant select, insert, update, delete on all tables in schema public to app;
           grant usage, select on all sequences in schema public to app;
 
-          -- por si el server no da EXECUTE a PUBLIC por defecto:
+          -- Permitir ejecutar funciones usadas por los tests/policies
           grant execute on function app.set_uid(uuid) to app;
+          grant execute on function auth.uid() to app;
           SQL
 
       - name: Install deps & run smoke tests
