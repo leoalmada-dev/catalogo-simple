@@ -12,60 +12,79 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# =========================
-# Job 1: App (Next) en contenedor Node + Alpine
-# =========================
 jobs:
+  # =========================
+  # Job 1: App (Next) en contenedor Node + Alpine
+  # =========================
   build-and-test:
     runs-on: ubuntu-latest
     container:
       image: node:20-alpine
-    defaults:
-      run:
-        shell: sh
-        working-directory: app-v1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare Alpine
+      - name: Detect APP_DIR (app-v1 ó raíz)
+        shell: sh
         run: |
-          apk add --no-cache libc6-compat git bash
+          if [ -f app-v1/package.json ]; then
+            echo "APP_DIR=app-v1" >> $GITHUB_ENV
+          else
+            echo "APP_DIR=." >> $GITHUB_ENV
+          fi
+          echo "APP_DIR=$APP_DIR"
+
+      - name: Prepare Alpine
+        shell: sh
+        run: |
+          apk add --no-cache libc6-compat git
           corepack enable
 
-      # Cache de npm vía setup-node (más simple/fiable dentro de container)
       - name: Setup Node (cache npm)
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: app-v1/package-lock.json
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
-      # Cache de Next (opcional). RUTA desde la raíz del repo:
+      # (Opcional) Cache de Next: solo si existe .next/cache
       - name: Cache Next build
+        if: ${{ hashFiles(format('{0}/package-lock.json', env.APP_DIR)) != '' }}
         uses: actions/cache@v4
         with:
-          path: app-v1/.next/cache
-          key: ${{ runner.os }}-next-${{ hashFiles('app-v1/package-lock.json', 'app-v1/next.config.*') }}
+          path: ${{ env.APP_DIR }}/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles(format('{0}/package-lock.json', env.APP_DIR), format('{0}/next.config.*', env.APP_DIR)) }}
           restore-keys: |
             ${{ runner.os }}-next-
 
       - name: Install dependencies
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         run: npm ci
 
       - name: Disable Next telemetry
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         run: npx next telemetry disable || true
 
       - name: Lint
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         run: npm run lint
 
       - name: Typecheck
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         run: npm run typecheck || true
 
       - name: Build
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         run: npm run build
 
       - name: Test (CI + Coverage)
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         env:
           CI: "true"
         run: npm run test:ci
@@ -75,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.sha }}
-          path: app-v1/coverage
+          path: ${{ env.APP_DIR }}/coverage
           if-no-files-found: warn
 
   # =========================
@@ -92,25 +111,39 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: catalogo_test
-        ports:
-          - 5432:5432
+        ports: [ "5432:5432" ]
         options: >-
           --health-cmd="pg_isready -U postgres -d catalogo_test"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
-    defaults:
-      run:
-        shell: sh
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare Alpine (psql + bash opcional)
+      - name: Detect APP_DIR y DB_DIR
+        shell: sh
         run: |
-          apk add --no-cache postgresql-client bash
+          if [ -f app-v1/package.json ]; then
+            echo "APP_DIR=app-v1" >> $GITHUB_ENV
+          else
+            echo "APP_DIR=." >> $GITHUB_ENV
+          fi
+          if [ -f app-v1/catalogo/db/schema.sql ]; then
+            echo "DB_DIR=app-v1/catalogo/db" >> $GITHUB_ENV
+          elif [ -f catalogo/db/schema.sql ]; then
+            echo "DB_DIR=catalogo/db" >> $GITHUB_ENV
+          else
+            echo "❌ No se encontró catalogo/db/schema.sql"; exit 1
+          fi
+          echo "APP_DIR=$APP_DIR  DB_DIR=$DB_DIR"
+
+      - name: Install psql client (Alpine)
+        shell: sh
+        run: apk add --no-cache postgresql-client
 
       - name: Wait for DB
+        shell: sh
         env:
           PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
         run: |
@@ -118,6 +151,7 @@ jobs:
           echo "✅ DB up"
 
       - name: Prepare extensions + Supabase shims
+        shell: sh
         env:
           PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
         run: |
@@ -140,15 +174,16 @@ jobs:
           SQL
 
       - name: Apply schema / rls / seeds
-        working-directory: app-v1
+        shell: sh
         env:
           PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
         run: |
-          psql "$PGURL" -v ON_ERROR_STOP=1 -f catalogo/db/schema.sql
-          psql "$PGURL" -v ON_ERROR_STOP=1 -f catalogo/db/rls.sql
-          psql "$PGURL" -v ON_ERROR_STOP=1 -f catalogo/db/seeds.sql
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/schema.sql"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/rls.sql"
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/seeds.sql"
 
       - name: Create non-superuser role for RLS tests
+        shell: sh
         env:
           PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
         run: |
@@ -171,10 +206,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: app-v1/package-lock.json
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
-      - name: Install deps and run DB tests
-        working-directory: app-v1
+      - name: Install deps and run DB tests (Vitest)
+        shell: sh
+        working-directory: ${{ env.APP_DIR }}
         env:
           DATABASE_URL: postgresql://app:app@postgres:5432/catalogo_test
         run: |
