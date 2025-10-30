@@ -126,7 +126,10 @@ jobs:
           create schema if not exists app;
           create or replace function app.set_uid(uid uuid)
           returns void language plpgsql as $$
-          begin perform set_config('app.uid', coalesce(uid::text,''), true); end $$;
+          begin
+            -- is_local = FALSE => persiste en la sesión, no solo en la transacción
+            perform set_config('app.uid', coalesce(uid::text,''), false);
+          end $$;
 
           create or replace function auth.uid()
           returns uuid language sql stable as $$
