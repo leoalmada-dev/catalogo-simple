@@ -167,6 +167,7 @@ jobs:
           grant execute on function auth.uid() to app;
           SQL
 
+          
       - name: Install deps & run smoke tests
         shell: sh
         run: |
