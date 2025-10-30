@@ -9,7 +9,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:ci": "vitest run --reporter=dot --coverage",
+    "test:ci": "vitest run --reporter=dot --coverage --exclude tests/db/**",
     "test:db": "vitest run --reporter=dot --dir tests/db",
     "format": "prettier --write .",
     "drizzle:generate": "drizzle-kit generate --out ./drizzle",
