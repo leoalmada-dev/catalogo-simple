@@ -165,6 +165,18 @@ jobs:
           alter default privileges in schema public grant usage, select on sequences to app;
           SQL
 
+      - name: Bootstrap editor profile
+        shell: sh
+        env:
+          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 <<'SQL'
+          -- crea un usuario fake en auth.users y úsalo como editor
+          insert into auth.users default values returning id \gset
+          insert into catalogo_profiles(user_id, role)
+          values (:'id','editor') on conflict do nothing;
+          SQL
+
       - name: Install deps and run DB tests
         shell: sh
         run: |

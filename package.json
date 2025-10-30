@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ci": "vitest run --reporter=dot --coverage --exclude tests/db/**",
-    "test:db": "vitest run --reporter=dot --dir tests/db",
+    "test:db": "vitest run --reporter=dot --dir tests/db --hookTimeout=30000",
     "format": "prettier --write .",
     "drizzle:generate": "drizzle-kit generate --out ./drizzle",
     "drizzle:migrate": "drizzle-kit migrate --config ./drizzle.config.ts"

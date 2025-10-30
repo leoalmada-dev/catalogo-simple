@@ -33,26 +33,29 @@ test('vista pública devuelve filas con min_price', async () => {
 
 test('RLS: anon NO inserta categorías', async () => {
   await setUid(null);
+
   const slug = 'test-cat-' + Date.now();
   let denied = false;
   try {
     await pool.query(`insert into catalogo_categories(name, slug) values ('Test', $1)`, [slug]);
-  } catch (e: any) {
-    denied = e.code === '42501';
+  } catch (e: unknown) {
+    const code = (e as { code?: string }).code;
+    denied = code === '42501';
   }
   expect(denied).toBe(true);
 });
 
 test('RLS: editor SÍ crea producto', async () => {
-  // crear usuario fake y perfil editor
-  const u = await pool.query(`insert into auth.users default values returning id`);
-  const uid: string = u.rows[0].id;
-  await pool.query(`insert into catalogo_profiles(user_id, role)
-                    values ($1, 'editor') on conflict do nothing`, [uid]);
+  // usamos un editor ya existente (bootstrap en el workflow)
+  const r = await pool.query(`select user_id from catalogo_profiles where role='editor' limit 1;`);
+  if (r.rowCount === 0) throw new Error('No hay editor bootstrapeado');
+  const uid: string = r.rows[0].user_id;
+
   await setUid(uid);
 
   const slug = 'test-prod-' + Date.now();
   await pool.query(`insert into catalogo_products(slug, name, status) values ($1,'Producto test','draft')`, [slug]);
-  const ok = await pool.query(`select 1 from catalogo_products where slug=$1`, [slug]);
+
+  const ok = await pool.query(`select 1 from catalogo_products where slug = $1`, [slug]);
   expect(ok.rowCount).toBe(1);
 });
