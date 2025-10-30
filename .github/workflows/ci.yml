@@ -143,6 +143,27 @@ jobs:
           psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/rls.sql"
           psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/seeds.sql"
 
+      - name: Create role "app" + mínimos grants
+        shell: sh
+        env:
+          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 <<'SQL'
+          do $$ begin
+            if not exists (select 1 from pg_roles where rolname = 'app') then
+              create role app login password 'app';
+            end if;
+          end $$;
+
+          -- permisos necesarios para los smoke tests
+          grant usage on schema public, app to app;
+          grant select, insert, update, delete on all tables in schema public to app;
+          grant usage, select on all sequences in schema public to app;
+
+          -- por si el server no da EXECUTE a PUBLIC por defecto:
+          grant execute on function app.set_uid(uuid) to app;
+          SQL
+
       - name: Install deps & run smoke tests
         shell: sh
         run: |
