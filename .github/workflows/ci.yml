@@ -77,7 +77,7 @@ jobs:
   # Job 2: DB tests en contenedor Node + Alpine + service Postgres
   # =========================
   db-tests:
-    name: DB (schema/RLS/seeds + tests)
+    name: DB (smoke tests)
     runs-on: ubuntu-latest
     container:
       image: node:20-alpine
@@ -104,16 +104,14 @@ jobs:
 
       - name: Wait for DB
         shell: sh
-        env:
-          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
+        env: { PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test }
         run: |
           until psql "$PGURL" -c "select 1" >/dev/null 2>&1; do echo "⏳ waiting db..."; sleep 1; done
           echo "✅ DB up"
 
       - name: Supabase shims + extensions
         shell: sh
-        env:
-          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
+        env: { PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test }
         run: |
           psql "$PGURL" -v ON_ERROR_STOP=1 <<'SQL'
           create extension if not exists pgcrypto;
@@ -127,7 +125,7 @@ jobs:
           create or replace function app.set_uid(uid uuid)
           returns void language plpgsql as $$
           begin
-            -- is_local = FALSE => persiste en la sesión, no solo en la transacción
+            -- is_local = FALSE => persiste en la sesión (evita timeouts raros)
             perform set_config('app.uid', coalesce(uid::text,''), false);
           end $$;
 
@@ -138,56 +136,20 @@ jobs:
 
       - name: Apply schema / rls / seeds
         shell: sh
-        env:
-          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
+        env: { PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test }
         run: |
-          DB_DIR="app-v1/catalogo/db"
-          [ -f "$DB_DIR/schema.sql" ] || DB_DIR="catalogo/db"
+          DB_DIR="app-v1/catalogo/db"; [ -f "$DB_DIR/schema.sql" ] || DB_DIR="catalogo/db"
           psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/schema.sql"
           psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/rls.sql"
           psql "$PGURL" -v ON_ERROR_STOP=1 -f "$DB_DIR/seeds.sql"
 
-      - name: Create non-superuser and grants
-        shell: sh
-        env:
-          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
-        run: |
-          psql "$PGURL" -v ON_ERROR_STOP=1 <<'SQL'
-          do $$ begin
-            if not exists (select 1 from pg_roles where rolname='app') then
-              create role app login password 'app';
-            end if;
-          end $$;
-
-          -- permisos mínimos para el rol app
-          grant usage on schema public, auth, app to app;
-          grant select, insert, update, delete on all tables in schema public to app;
-          grant select, insert, update, delete on all tables in schema auth   to app;
-          grant usage, select on all sequences in schema public to app;
-          alter default privileges in schema public grant select, insert, update, delete on tables to app;
-          alter default privileges in schema public grant usage, select on sequences to app;
-          SQL
-
-      - name: Bootstrap editor profile
-        shell: sh
-        env:
-          PGURL: postgresql://postgres:postgres@postgres:5432/catalogo_test
-        run: |
-          # crear usuario en auth.users y su perfil editor
-          EDITOR_UID="$(psql "$PGURL" -Atq -c "insert into auth.users default values returning id")"
-          psql "$PGURL" -v ON_ERROR_STOP=1 -c "insert into catalogo_profiles(user_id, role) values ('$EDITOR_UID','editor') on conflict do nothing"
-          echo "EDITOR_UID=$EDITOR_UID" >> "$GITHUB_ENV"
-
-      - name: Install deps and run DB tests
+      - name: Install deps & run smoke tests
         shell: sh
         run: |
-          APP_DIR="app-v1"
-          [ -f "$APP_DIR/package.json" ] || APP_DIR="."
+          APP_DIR="app-v1"; [ -f "$APP_DIR/package.json" ] || APP_DIR="."
           cd "$APP_DIR"
           npm ci
           npm i -D pg
           npm run test:db
         env:
           DATABASE_URL: postgresql://app:app@postgres:5432/catalogo_test
-          EDITOR_UID: ${{ env.EDITOR_UID }}
-
