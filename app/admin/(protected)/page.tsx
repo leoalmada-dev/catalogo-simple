@@ -45,8 +45,9 @@ export default async function AdminHome() {
                 </td>
                 <td className="p-2 text-gray-500">{new Date(p.updated_at).toLocaleString()}</td>
                 <td className="p-2 text-right">
-                  <Link href={`/admin/products/${p.id}`} className="underline">Editar</Link>
-                </td>
+  <Link href={`/admin/products/${p.id}`} className="underline mr-3">Editar</Link>
+  <Link href={`/admin/products/${p.id}/images`} className="underline">Imágenes</Link>
+</td>
               </tr>
             ))}
             {!rows.length && (

@@ -178,9 +178,49 @@ export async function deleteProduct(id: string) {
 }
 
 // ===== IMAGES (tabla + storage opcional)
+export async function uploadImageAction(productId: string, form: FormData) {
+  await requireAdmin();
+  const file = form.get("file") as File | null;
+  if (!file) throw new Error("Falta archivo");
+  const supabase = await createServerClient();
+
+  const bucket = process.env.STORAGE_BUCKET || "products";
+  const key = `${productId}/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+
+  // 1) subir a Storage
+  const up = await supabase.storage.from(bucket).upload(key, file, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (up.error) throw up.error;
+
+  // 2) ¿será primaria? (si no hay imágenes previas)
+  const { count } = await supabase
+    .from(T_IMAGES)
+    .select("*", { head: true, count: "exact" })
+    .eq("product_id", productId);
+
+  const is_primary = (count ?? 0) === 0;
+
+  // 3) insertar fila en la tabla
+  const path = `${bucket}/${key}`; // guardamos prefijado con bucket
+  const { error: insErr } = await supabase.from(T_IMAGES).insert({
+    product_id: productId,
+    path,
+    alt: file.name,
+    is_primary,
+    position: (count ?? 0) + 1,
+  });
+  if (insErr) throw insErr;
+
+  revalidatePath(`/admin/products/${productId}/images`);
+}
+
 export async function listImagesAction(productId: string) {
   await requireAdmin();
   const supabase = await createServerClient();
+  const bucket = process.env.STORAGE_BUCKET || "products";
+
   const { data, error } = await supabase
     .from(T_IMAGES)
     .select("id, path, alt, is_primary, position")
@@ -189,27 +229,38 @@ export async function listImagesAction(productId: string) {
     .order("position", { ascending: true });
   if (error) throw error;
 
-  // Si tu path apunta a Storage (p.e. 'products/slug-1.jpg'), derivamos URL pública:
-  const bucket = process.env.STORAGE_BUCKET || "products";
-  return (data ?? []).map((i: any) => ({
-    name: i.path.split("/").pop() ?? i.path,
-    path: i.path,
-    url: i.path.startsWith(`${bucket}/`)
-      ? supabase.storage.from(bucket).getPublicUrl(i.path).data.publicUrl
-      : i.path, // por si guardaste URL absoluta
-  }));
+  return (data ?? []).map((i: any) => {
+    const objectPath = i.path.startsWith(`${bucket}/`)
+      ? i.path.slice(bucket.length + 1)
+      : i.path;
+    const url = supabase.storage.from(bucket).getPublicUrl(objectPath).data.publicUrl;
+    return { id: i.id, name: i.alt ?? objectPath.split("/").pop() ?? objectPath, path: i.path, url };
+  });
 }
 
 export async function deleteImageAction(imageIdOrPath: string) {
   await requireAdmin();
   const supabase = await createServerClient();
+  const bucket = process.env.STORAGE_BUCKET || "products";
 
-  // si te llega ID, borramos por id; si es path, por path
-  if (imageIdOrPath.includes("-")) {
-    await supabase.from(T_IMAGES).delete().eq("id", imageIdOrPath).catch(()=>{});
-  } else {
-    await supabase.from(T_IMAGES).delete().eq("path", imageIdOrPath).catch(()=>{});
-  }
+  // 1) buscar la fila para obtener el path y product_id
+  const byId = await supabase.from(T_IMAGES).select("id, path, product_id").eq("id", imageIdOrPath).maybeSingle();
+  const row = byId.data ?? (
+    await supabase.from(T_IMAGES).select("id, path, product_id").eq("path", imageIdOrPath).maybeSingle()
+  ).data;
+
+  if (!row) return;
+
+  // 2) borrar del Storage
+  const objectPath = row.path.startsWith(`${bucket}/`)
+    ? row.path.slice(bucket.length + 1)
+    : row.path;
+  await supabase.storage.from(bucket).remove([objectPath]).catch(() => {});
+
+  // 3) borrar de la tabla
+  await supabase.from(T_IMAGES).delete().eq("id", row.id).catch(() => {});
+
+  revalidatePath(`/admin/products/${row.product_id}/images`);
 }
 
 // ===== CSV v2 alineado al esquema =====

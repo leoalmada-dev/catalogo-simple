@@ -9,7 +9,9 @@ export const variantSchema = z.object({
   price: z.number().min(0).default(0),       // decimal en UI → se convertirá a cents en server
   is_available: z.boolean().default(true),
   stock: z.number().int().min(0).default(0),
-  attributes: z.record(z.any()).optional().nullable(), // libre
+  // `z.record` en algunas versiones/definiciones de Zod espera (keySchema, valueSchema).
+  // Usamos key string y value unknown para ser conservadores y compatibles.
+  attributes: z.record(z.string(), z.unknown()).optional().nullable(), // libre
 });
 
 export const productSchema = z.object({
