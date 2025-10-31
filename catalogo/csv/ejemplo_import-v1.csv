@@ -1,0 +1,3 @@
+title,slug,short_desc,long_desc,price,currency,visible,order,seo_title,seo_description,variante_talle,variante_color,variante_medida,variante_stock,variante_sku
+Remera básica,remera-basica,Algodón suave,Remera 100% algodón.,19.99,USD,true,10,Remera básica,Remera de algodón,T,M,,20,REM-T-M
+Vaso de vidrio,vaso-vidrio,300ml templado,Set de 6 vasos templados.,,USD,false,20,Vaso templado,Vaso resistente,,,300ml,,

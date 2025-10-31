@@ -1,0 +1,4 @@
+name,slug,description,status,variant_sku,variant_name,variant_price,variant_available,variant_stock
+Café Iguaçu,cafe-iguacu,Lata,published,SKU-IGU-LATA,Lata,320,TRUE,0
+Nescafé,nescafe,Vidrio 170g,published,SKU-NES-VID,Vidrio,330,TRUE,0
+Nescafé,nescafe,,published,SKU-NES-LAT150,Lata 150g,270,TRUE,0
