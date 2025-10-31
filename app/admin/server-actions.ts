@@ -329,3 +329,15 @@ export async function importCSVv2(form: FormData) {
   }
   return { ok, fail, errors };
 }
+
+export async function setProductStatus(opts: { id: string; status: "draft" | "published" | "archived" }) {
+  await requireAdmin();
+  const supabase = await createServerClient();
+  const { error } = await supabase
+    .from(T_PRODUCTS)
+    .update({ status: opts.status })
+    .eq("id", opts.id);
+  if (error) throw error;
+  revalidatePath("/admin");
+}
+
