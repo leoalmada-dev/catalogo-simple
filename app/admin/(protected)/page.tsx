@@ -3,6 +3,18 @@ import { listProducts } from "@/app/admin/server-actions";
 import { ImportCSVForm, ExportCSVButton } from "@/components/admin/CSVTools";
 import StatusToggle from "@/components/admin/StatusToggle";
 
+type AdminListRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: "draft" | "published" | "archived";
+  visible: boolean;
+  min_price: string | null;
+  variants_total: number;
+  variants_available: number;
+  updated_at: string;
+};
+
 export default async function AdminHome() {
   const { rows } = await listProducts();
 
@@ -32,7 +44,7 @@ export default async function AdminHome() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((p: any) => (
+            {(rows as AdminListRow[]).map((p) => (
               <tr key={p.id} className="border-t">
                 <td className="p-2">{p.name}</td>
                 <td className="p-2 text-gray-500">{p.slug}</td>
@@ -45,9 +57,9 @@ export default async function AdminHome() {
                 </td>
                 <td className="p-2 text-gray-500">{new Date(p.updated_at).toLocaleString()}</td>
                 <td className="p-2 text-right">
-  <Link href={`/admin/products/${p.id}`} className="underline mr-3">Editar</Link>
-  <Link href={`/admin/products/${p.id}/images`} className="underline">Imágenes</Link>
-</td>
+                  <Link href={`/admin/products/${p.id}`} className="underline mr-3">Editar</Link>
+                  <Link href={`/admin/products/${p.id}/images`} className="underline">Imágenes</Link>
+                </td>
               </tr>
             ))}
             {!rows.length && (

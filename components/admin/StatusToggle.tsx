@@ -27,9 +27,9 @@ export default function StatusToggle({
       try {
         await setProductStatus({ id: productId, status: next });
         toast.success(`Estado actualizado a ${statusLabel(next)}`);
-      } catch (err: any) {
-        setOptimistic(prev); // rollback
-        const msg = err?.message ?? "No se pudo actualizar el estado";
+      } catch (err: unknown) {
+        setOptimistic(prev);
+        const msg = err instanceof Error ? err.message : "No se pudo actualizar el estado";
         toast.error(msg);
       }
     });
@@ -39,15 +39,14 @@ export default function StatusToggle({
     optimistic === "published"
       ? "bg-green-100 text-green-700"
       : optimistic === "draft"
-      ? "bg-gray-100 text-gray-700"
-      : "bg-yellow-100 text-yellow-700";
+        ? "bg-gray-100 text-gray-700"
+        : "bg-yellow-100 text-yellow-700";
 
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${badge} ${
-          pending ? "opacity-70" : ""
-        }`}
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${badge} ${pending ? "opacity-70" : ""
+          }`}
         aria-live="polite"
       >
         {optimistic === "published" ? "Visible" : statusLabel(optimistic)}

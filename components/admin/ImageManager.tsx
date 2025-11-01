@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { uploadImageAction, listImagesAction, deleteImageAction } from "@/app/admin/server-actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -11,11 +11,14 @@ export function ImageManager({ productId }: { productId: string }) {
   const [items, setItems] = useState<Img[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const refresh = async () => setItems(await listImagesAction(productId));
+  const refresh = useCallback(async () => {
+    const list = await listImagesAction(productId);
+    setItems(list as Img[]);
+  }, [productId]);
 
   useEffect(() => {
-    refresh();
-  }, [productId]);
+    void refresh();
+  }, [refresh]);
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -26,8 +29,9 @@ export function ImageManager({ productId }: { productId: string }) {
       await uploadImageAction(productId, form);
       await refresh();
       toast.success("Imagen subida");
-    } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo subir la imagen");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo subir la imagen";
+      toast.error(msg);
     } finally {
       setBusy(false);
       if (e.target) e.target.value = "";
@@ -37,11 +41,12 @@ export function ImageManager({ productId }: { productId: string }) {
   const onDelete = async (img: Img) => {
     setBusy(true);
     try {
-      await deleteImageAction(img.id); // también acepta path
+      await deleteImageAction(img.id);
       await refresh();
       toast.success("Imagen borrada");
-    } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo borrar la imagen");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo borrar la imagen";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
