@@ -7,13 +7,13 @@ export default async function ImagesPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;              // <-- desenvuelve la Promise
+  const { id } = await params;
   const product = await getProductById(id);
   if (!product) return notFound();
 
   return (
     <div className="max-w-4xl space-y-4">
-      <h2 className="text-xl font-semibold">Imágenes — {product.title ?? product.name}</h2>
+      <h2 className="text-xl font-semibold">Imágenes — {product.name}</h2>
       <ImageManager productId={product.id} />
     </div>
   );

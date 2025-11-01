@@ -1,6 +1,14 @@
-﻿// lib/supabase/server.ts
-import { cookies, type CookieOptions } from "next/headers";
+﻿import { cookies } from "next/headers";
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
+
+type CookieOptions = Partial<{
+  expires: Date;
+  httpOnly: boolean;
+  maxAge: number;
+  path: string;
+  sameSite: "lax" | "strict" | "none";
+  secure: boolean;
+}>;
 
 export async function createServerClient() {
   const cookieStore = await cookies();

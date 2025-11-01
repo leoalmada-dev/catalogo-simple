@@ -68,8 +68,8 @@ export async function listProducts() {
       .from(T_VARIANTS)
       .select("product_id, price_cents, is_available")
       .in("product_id", ids)) as unknown as {
-      data: Pick<VariantDB, "product_id" | "price_cents" | "is_available">[];
-    };
+        data: Pick<VariantDB, "product_id" | "price_cents" | "is_available">[];
+      };
 
     (vars ?? []).forEach((v) => {
       const s = (stats[v.product_id] ??= { min: null, total: 0, available: 0 });
@@ -117,8 +117,8 @@ export async function getProductById(id: string) {
     .select("sku, name, price_cents, is_available, stock, attributes")
     .eq("product_id", id)
     .order("created_at", { ascending: true })) as unknown as {
-    data: VariantDB[] | null;
-  };
+      data: VariantDB[] | null;
+    };
 
   return {
     ...p,
@@ -212,8 +212,10 @@ export async function deleteProduct(id: string) {
   await requireAdmin();
   const supabase = await createServerClient();
 
-  await supabase.from(T_IMAGES).delete().eq("product_id", id).catch(() => {});
-  await supabase.from(T_VARIANTS).delete().eq("product_id", id).catch(() => {});
+  // borrar imágenes asociadas (tabla)
+  try { await supabase.from(T_IMAGES).delete().eq("product_id", id); } catch { /* noop */ }
+  // variantes
+  try { await supabase.from(T_VARIANTS).delete().eq("product_id", id); } catch { /* noop */ }
   const { error } = await supabase.from(T_PRODUCTS).delete().eq("id", id);
   if (error) throw error;
 
@@ -283,9 +285,9 @@ export async function listImagesAction(productId: string) {
     .eq("product_id", productId)
     .order("is_primary", { ascending: false })
     .order("position", { ascending: true })) as unknown as {
-    data: ImageDB[] | null;
-    error: unknown;
-  };
+      data: ImageDB[] | null;
+      error: unknown;
+    };
   if (error) throw error;
 
   return (data ?? []).map((i) => {
@@ -319,10 +321,10 @@ export async function deleteImageAction(imageIdOrPath: string) {
 
   // borrar en Storage
   const objectPath = row.path.startsWith(`${bucket}/`) ? row.path.slice(bucket.length + 1) : row.path;
-  await supabase.storage.from(bucket).remove([objectPath]).catch(() => {});
+  try { await supabase.storage.from(bucket).remove([objectPath]); } catch { /* noop */ }
 
-  // borrar en tabla
-  await supabase.from(T_IMAGES).delete().eq("id", row.id).catch(() => {});
+  // borrar de la tabla
+  try { await supabase.from(T_IMAGES).delete().eq("id", row.id); } catch { /* noop */ }
 
   revalidatePath(`/admin/products/${row.product_id}/images`);
 }
@@ -352,8 +354,8 @@ export async function exportCSVv2() {
   const { data: variants } = (await supabase
     .from(T_VARIANTS)
     .select("product_id, sku, name, price_cents, is_available, stock")) as unknown as {
-    data: VariantDB[];
-  };
+      data: VariantDB[];
+    };
 
   const byProduct = new Map<string, VariantDB[]>();
   (variants ?? []).forEach((v) => {

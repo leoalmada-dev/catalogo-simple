@@ -1,5 +1,5 @@
 "use client";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type SubmitHandler, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +18,23 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+
+  const resolver = zodResolver(productSchema) as unknown as Resolver<ProductFormData>;
+
   const { register, handleSubmit, control, formState: { errors } } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
-    defaultValues: initial ?? { status: "draft", variants: [] },
+    resolver,
+    defaultValues: {
+      name: initial?.name ?? "",
+      slug: initial?.slug ?? "",
+      description: initial?.description ?? null,
+      status: (initial?.status as ProductFormData["status"]) ?? "draft",
+      variants: initial?.variants ?? [],
+    },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
 
-  const onSubmit = (data: ProductFormData) => {
+  const onSubmit: SubmitHandler<ProductFormData> = (data) => {
     start(async () => {
       if (mode === "create") await createProduct(data);
       else await updateProduct({ id: String(initial?.id), data });
@@ -68,8 +77,17 @@ export function ProductForm({
           <div key={f.id} className="grid grid-cols-6 gap-2 items-end">
             <Input placeholder="SKU *" {...register(`variants.${idx}.sku` as const)} />
             <Input placeholder="Nombre" {...register(`variants.${idx}.name` as const)} />
-            <Input placeholder="Precio" type="number" step="0.01" {...register(`variants.${idx}.price` as const, { valueAsNumber: true })} />
-            <Input placeholder="Stock" type="number" {...register(`variants.${idx}.stock` as const, { valueAsNumber: true })} />
+            <Input
+              placeholder="Precio"
+              type="number"
+              step="0.01"
+              {...register(`variants.${idx}.price` as const, { valueAsNumber: true })}
+            />
+            <Input
+              placeholder="Stock"
+              type="number"
+              {...register(`variants.${idx}.stock` as const, { valueAsNumber: true })}
+            />
             <label className="inline-flex items-center gap-2">
               <input type="checkbox" {...register(`variants.${idx}.is_available` as const)} defaultChecked />
               Disponible
@@ -77,14 +95,26 @@ export function ProductForm({
             <Button type="button" variant="secondary" onClick={() => remove(idx)}>Quitar</Button>
           </div>
         ))}
-        <Button type="button" variant="outline" onClick={() => append({ is_available: true, stock: 0 })}>+ Variante</Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => append({ sku: "", price: 0, is_available: true, stock: 0 })}
+        >
+          + Variante
+        </Button>
       </fieldset>
 
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>{mode === "create" ? "Crear" : "Guardar"}</Button>
         {mode === "edit" && initial?.id && (
-          <Button type="button" variant="destructive" disabled={pending}
-            onClick={() => { start(async () => { await deleteProduct(String(initial.id)); router.push("/admin"); }); }}>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={() => {
+              start(async () => { await deleteProduct(String(initial.id)); router.push("/admin"); });
+            }}
+          >
             Eliminar
           </Button>
         )}
