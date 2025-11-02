@@ -1,4 +1,5 @@
-﻿import { cookies } from "next/headers";
+﻿// lib/supabase/server.ts
+import { cookies } from "next/headers";
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 
 // Tipos mínimos para el store de cookies (evita depender de tipos internos de Next)
@@ -9,7 +10,7 @@ type CookieStore = {
 };
 
 export async function createServerClient() {
-  // En Next 16, cookies() es async
+  // En Next 16, en algunos entornos cookies() puede ser async; mantenemos compat.
   const cookieStore = (await cookies()) as unknown as CookieStore;
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
@@ -20,14 +21,19 @@ export async function createServerClient() {
 
   return createSupabaseServerClient(supabaseUrl, supabaseKey, {
     cookies: {
-      // API requerida por @supabase/ssr
       getAll() {
         return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        // ⚠️ IMPORTANTE: setAll solo se puede usar en Server Actions o Route Handlers.
+        // Si se invoca desde un Server Component, Next lanza error. Lo capturamos y seguimos.
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // No-op en Server Components (lectura funciona igual).
+        }
       },
     },
   });

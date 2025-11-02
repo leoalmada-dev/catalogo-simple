@@ -1,11 +1,14 @@
 ﻿import "./globals.css"
 import { ReactNode } from "react"
 import SiteHeader from "@/components/site-header"
+import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/env';
 
-export const metadata = {
-  title: "Catálogo Simple",
-  description: "Catálogo SEO-first sin checkout",
-}
+export const metadata: Metadata = {
+  title: 'Catálogo Simple',
+  description: 'Catálogo SEO-first sin checkout',
+  metadataBase: new URL(SITE_URL), // 👈
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
