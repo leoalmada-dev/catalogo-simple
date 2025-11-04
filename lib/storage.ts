@@ -1,28 +1,24 @@
-import { createServerClient } from "@/lib/supabase/server";
-import { createBrowserClient } from "@/lib/supabase/client";
-
-const BUCKET = process.env.STORAGE_BUCKET || "products";
-
-export async function listProductImages(productId: string) {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase.storage.from(BUCKET).list(productId, { sortBy: { column: "created_at", order: "asc" }});
-  if (error) throw error;
-  return (data ?? []).map((i) => ({
-    name: i.name,
-    path: `${productId}/${i.name}`,
-    url: supabase.storage.from(BUCKET).getPublicUrl(`${productId}/${i.name}`).data.publicUrl,
-  }));
+export function normalizeObjectPath(path: string) {
+  const bucket = process.env.STORAGE_BUCKET || 'products';
+  const prefix = `${bucket}/`;
+  return path?.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
-export async function deleteImage(path: string) {
-  const supabase = await createServerClient();
-  const { error } = await supabase.storage.from(BUCKET).remove([path]);
-  if (error) throw error;
+// Consideramos "válido" el path si tiene al menos una subcarpeta (productId/…)
+function isLikelyValidPath(path: string) {
+  if (!path) return false;
+  const clean = normalizeObjectPath(path);
+  // Requiere al menos un slash: productId/archivo
+  return clean.includes('/') && /\.[a-z0-9]+$/i.test(clean);
 }
 
-export async function uploadFromClient(productId: string, file: File) {
-  const supabase = createBrowserClient();
-  const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(`${productId}/${filename}`, file, { upsert: false });
-  if (error) throw error;
+/** Convierte path relativo del bucket -> URL pública de Supabase; null si no es válido */
+export function toPublicStorageUrl(path?: string | null) {
+  if (!path) return null;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return null;
+  const bucket = process.env.STORAGE_BUCKET || 'products';
+  if (!isLikelyValidPath(path)) return null; // 👈 clave para evitar 400
+  const clean = normalizeObjectPath(path);
+  return `${base}/storage/v1/object/public/${bucket}/${clean}`;
 }

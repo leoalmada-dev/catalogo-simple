@@ -135,3 +135,47 @@ export async function getProductImages(productId: string) {
     if (error) throw error;
     return data ?? [];
 }
+
+// ─── Tipos de variantes/config ────────────────────────────────────────────────
+export type VariantPublic = {
+  id: string;
+  sku: string;
+  name: string | null;
+  price_cents: number;
+  is_available: boolean;
+  stock: number;
+  attributes: Record<string, unknown>;
+};
+
+export type CatalogConfig = {
+  show_prices: boolean;
+  currency_code: string; // 'UYU' por defecto en tu schema
+  whatsapp: string | null;
+};
+
+// ─── Variantes visibles (elegibles) por producto ─────────────────────────────
+export async function getProductVariants(productId: string): Promise<VariantPublic[]> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase
+    .from('catalogo_variants')
+    .select('id, sku, name, price_cents, is_available, stock, attributes')
+    .eq('product_id', productId)
+    .eq('is_available', true)
+    .order('price_cents', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as VariantPublic[];
+}
+
+// ─── Config global (currency, etc) ────────────────────────────────────────────
+export async function getCatalogConfig(): Promise<CatalogConfig> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase
+    .from('catalogo_config')
+    .select('show_prices, currency_code, whatsapp')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? { show_prices: true, currency_code: 'UYU', whatsapp: null }) as CatalogConfig;
+}
