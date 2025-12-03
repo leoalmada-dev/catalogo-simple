@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState, useTransition } from 'react';
+import { FormEvent, useMemo, useRef, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 type Cat = { slug: string; name: string };
@@ -11,28 +11,27 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  const [q, setQ]   = useState(params.get('q') ?? '');
-  const [cat, setCat] = useState(params.get('category') ?? 'all');
+  // Leemos siempre desde la URL
+  const qFromUrl = params.get('q') ?? '';
+  const catFromUrl = params.get('category') ?? 'all';
 
-  // Sincronizar si cambian los params por back/forward o enlaces
-  useEffect(() => {
-    setQ(params.get('q') ?? '');
-    setCat(params.get('category') ?? 'all');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  // Input de búsqueda NO controlado (sin estado) con defaultValue.
+  // Usamos un key para remount cuando cambian los params → sincroniza back/forward sin efecto ni setState.
+  const qInputRef = useRef<HTMLInputElement>(null);
+  const qInputKey = useMemo(() => qFromUrl, [qFromUrl]);
 
-  function applyFilters(nextCategory?: string) {
-    const next = new URLSearchParams();
-    const qTrim = q.trim();
+  function applyFilters(nextQ?: string, nextCategory?: string) {
+    const search = new URLSearchParams();
+    const effectiveQ = (nextQ ?? qInputRef.current?.value ?? '').trim();
+    const effectiveCat = (nextCategory ?? catFromUrl) || 'all';
 
-    if (qTrim.length >= 2) next.set('q', qTrim);
-    const categoryToUse = (nextCategory ?? cat) || 'all';
-    if (categoryToUse !== 'all') next.set('category', categoryToUse);
+    if (effectiveQ.length >= 2) search.set('q', effectiveQ);
+    if (effectiveCat !== 'all') search.set('category', effectiveCat);
 
     // cada cambio de filtros resetea page
-    next.set('page', '1');
+    search.set('page', '1');
 
-    const url = `${pathname}${next.toString() ? `?${next.toString()}` : ''}`;
+    const url = `${pathname}${search.toString() ? `?${search.toString()}` : ''}`;
     startTransition(() => {
       router.replace(url, { scroll: false });
     });
@@ -40,20 +39,19 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    applyFilters(); // aplica texto + categoría actual
+    applyFilters(); // usa el valor actual del input
   }
 
   function onClear() {
-    setQ('');
-    setCat('all');
+    if (qInputRef.current) qInputRef.current.value = '';
     startTransition(() => {
       router.replace(pathname, { scroll: false });
     });
   }
 
   function onCategoryChange(value: string) {
-    setCat(value);
-    applyFilters(value); // 👈 aplica al instante
+    // Aplica al instante con el valor actual del input
+    applyFilters(qInputRef.current?.value ?? '', value);
   }
 
   return (
@@ -63,8 +61,9 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
     >
       <div className="flex w-full gap-2">
         <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          key={qInputKey}
+          ref={qInputRef}
+          defaultValue={qFromUrl}
           placeholder="Buscar productos… (mín. 2 letras)"
           className="w-full rounded-xl border px-3 py-2 text-sm"
           aria-label="Buscar por texto"
@@ -88,9 +87,9 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
       </div>
 
       <select
-        value={cat}
+        value={catFromUrl}
         onChange={(e) => onCategoryChange(e.target.value)}
-        className="w-full sm:w-64 rounded-xl border px-3 py-2 text-sm"
+        className="w-full rounded-xl border px-3 py-2 text-sm sm:w-64"
         aria-label="Filtrar por categoría"
       >
         <option value="all">Todas las categorías</option>

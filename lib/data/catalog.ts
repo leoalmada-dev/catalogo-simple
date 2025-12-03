@@ -1,181 +1,227 @@
 // lib/data/catalog.ts
 import { createServerClient } from '@/lib/supabase/server';
 
+// ---- Tipos públicos (según view y tablas) ----
 export type ProductPublic = {
     id: string;
     slug: string;
     name: string;
     description: string | null;
+    effective_show_prices: boolean;
+    min_price_visible: number | null;
+    primary_image: string | null;
     created_at: string;
-    updated_at: string | null;
-    effective_show_prices: boolean | null;
-    min_price_cents: number | null;
-    min_price_visible: number | null; // viene como numeric -> number
-    primary_image: string | null;     // path de Storage
+    updated_at: string;
 };
 
-export type Category = { slug: string; name: string; id: string };
-
-export type SearchParams = {
-    q?: string;
-    category?: string; // slug o 'all'
-    page?: number;
-    perPage?: number;
-    orderBy?: 'created_at' | 'name' | 'min_price_visible';
-    order?: 'asc' | 'desc';
+export type ImageRow = {
+    id: string;
+    path: string;
+    alt: string | null;
+    is_primary: boolean;
+    position: number;
+    variant_id: string | null;
 };
 
-// helpers internos
-function normalizeOrder(order?: 'asc' | 'desc') {
-    return order === 'asc' ? true : false;
-}
+export type VariantRow = {
+    id: string;
+    product_id: string;
+    sku: string;
+    name: string | null;
+    price_cents: number;
+    is_available: boolean;
+    stock: number;
+    attributes: Record<string, unknown>;
+};
 
-export async function getCategories(): Promise<Category[]> {
-    const supabase = await createServerClient();
-    const { data, error } = await supabase
-        .from('catalogo_categories')
-        .select('id, name, slug')
-        .order('name', { ascending: true });
+export type CatalogConfig = {
+    id: number;
+    show_prices: boolean;
+    currency_code: string;
+    whatsapp: string | null;
+    updated_at: string;
+};
 
-    if (error) throw error;
-    return (data ?? []) as Category[];
-}
+export type CategoryLite = { slug: string; name: string };
 
-export async function searchProducts({
-    q,
-    category,
-    page = 1,
-    perPage = 12,
-    orderBy = 'created_at',
-    order = 'desc'
-}: SearchParams): Promise<{ items: ProductPublic[]; total: number }> {
-    const supabase = await createServerClient();
-
-    let query = supabase
-        .from('catalogo_v_products_public')
-        .select('*', { count: 'exact' });
-
-    if (q && q.trim()) {
-        // Normalizamos el patrón para PostgREST: usar asteriscos (*) en ilike
-        const s = q.trim().replace(/[%*]/g, ''); // evita romper el querystring
-        query = query.or(`name.ilike.*${s}*,description.ilike.*${s}*`);
+// ---- Error tipado para not found ----
+export class NotFoundError extends Error {
+    readonly code = 'NOT_FOUND' as const;
+    constructor(message = 'NOT_FOUND') {
+        super(message);
+        this.name = 'NotFoundError';
     }
-
-    if (category && category !== 'all') {
-        const slug = category.toLowerCase().trim();
-        const supabase = await createServerClient();
-
-        const { data: cat, error: catErr } = await supabase
-            .from('catalogo_categories')
-            .select('id,slug')
-            .eq('slug', slug)
-            .maybeSingle();
-
-        if (catErr) throw catErr;
-        if (!cat) return { items: [], total: 0 };
-
-        const { data: pivots, error: pivErr } = await supabase
-            .from('catalogo_product_categories')
-            .select('product_id')
-            .eq('category_id', cat.id);
-        if (pivErr) throw pivErr;
-
-        const ids = (pivots ?? []).map((r) => r.product_id);
-        if (ids.length === 0) return { items: [], total: 0 };
-
-        query = query.in('id', ids);
-    }
-
-    query = query
-        .order(orderBy, { ascending: order === 'asc' })
-        .range((page - 1) * perPage, page * perPage - 1);
-
-    const { data, count, error } = await query;
-    if (error) throw error;
-
-    return { items: (data ?? []) as ProductPublic[], total: count ?? 0 };
+}
+export function isNotFound(e: unknown): e is NotFoundError {
+    return e instanceof NotFoundError || (typeof e === 'object' && e !== null && (e as { code?: string }).code === 'NOT_FOUND');
 }
 
+// ---- Funciones base ----
 export async function getProductBySlug(slug: string): Promise<ProductPublic> {
     const supabase = await createServerClient();
-
-    const { data: viewData, error: viewErr } = await supabase
+    const { data, error } = await supabase
         .from('catalogo_v_products_public')
-        .select('*')
+        .select(
+            'id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at'
+        )
         .eq('slug', slug)
         .maybeSingle();
 
-    if (viewErr) throw viewErr;
-    if (viewData) return viewData as ProductPublic;
-
-    // (fallback sólo para diagnóstico si la vista no lo trae)
-    const { data: base, error: baseErr } = await supabase
-        .from('catalogo_products')
-        .select('id, slug, status')
-        .eq('slug', slug)
-        .maybeSingle();
-
-    if (baseErr) throw baseErr;
-
-    const err: any = new Error('NOT_FOUND');
-    err.code = 'NOT_FOUND';
-    err.meta = base ? { exists: true, status: base.status } : { exists: false };
-    throw err;
+    if (error) throw error;
+    if (!data) throw new NotFoundError();
+    return data as ProductPublic;
 }
 
-export async function getProductImages(productId: string) {
+export async function getProductImages(productId: string): Promise<ImageRow[]> {
     const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('catalogo_images')
-        .select('path, alt, is_primary, position')
+        .select('id, path, alt, is_primary, position, variant_id')
         .eq('product_id', productId)
         .order('is_primary', { ascending: false })
         .order('position', { ascending: true });
 
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as ImageRow[];
 }
 
-// ─── Tipos de variantes/config ────────────────────────────────────────────────
-export type VariantPublic = {
-  id: string;
-  sku: string;
-  name: string | null;
-  price_cents: number;
-  is_available: boolean;
-  stock: number;
-  attributes: Record<string, unknown>;
-};
+export async function getProductVariants(productId: string): Promise<VariantRow[]> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase
+        .from('catalogo_variants')
+        .select('id, product_id, sku, name, price_cents, is_available, stock, attributes')
+        .eq('product_id', productId)
+        .order('price_cents', { ascending: true })
+        .order('name', { ascending: true });
 
-export type CatalogConfig = {
-  show_prices: boolean;
-  currency_code: string; // 'UYU' por defecto en tu schema
-  whatsapp: string | null;
-};
-
-// ─── Variantes visibles (elegibles) por producto ─────────────────────────────
-export async function getProductVariants(productId: string): Promise<VariantPublic[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from('catalogo_variants')
-    .select('id, sku, name, price_cents, is_available, stock, attributes')
-    .eq('product_id', productId)
-    .eq('is_available', true)
-    .order('price_cents', { ascending: true })
-    .order('name', { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as VariantPublic[];
+    if (error) throw error;
+    return (data ?? []) as VariantRow[];
 }
 
-// ─── Config global (currency, etc) ────────────────────────────────────────────
 export async function getCatalogConfig(): Promise<CatalogConfig> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from('catalogo_config')
-    .select('show_prices, currency_code, whatsapp')
-    .eq('id', 1)
-    .maybeSingle();
-  if (error) throw error;
-  return (data ?? { show_prices: true, currency_code: 'UYU', whatsapp: null }) as CatalogConfig;
+    const supabase = await createServerClient();
+    const { data, error } = await supabase
+        .from('catalogo_config')
+        .select('id, show_prices, currency_code, whatsapp, updated_at')
+        .eq('id', 1)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+        return {
+            id: 1,
+            show_prices: true,
+            currency_code: 'UYU',
+            whatsapp: null,
+            updated_at: new Date().toISOString(),
+        };
+    }
+    return data as CatalogConfig;
+}
+
+export async function getVariantPrimaryImageMap(variantIds: string[]) {
+    if (!variantIds.length) return {} as Record<string, string>;
+    const supabase = await createServerClient();
+    const { data, error } = await supabase
+        .from('catalogo_images')
+        .select('variant_id, path, is_primary, position')
+        .in('variant_id', variantIds)
+        .order('is_primary', { ascending: false })
+        .order('position', { ascending: true });
+
+    if (error) throw error;
+    const map: Record<string, string> = {};
+    for (const r of data ?? []) {
+        const v = (r as { variant_id: string | null }).variant_id;
+        if (v && !map[v]) {
+            map[v] = (r as { path: string }).path;
+        }
+    }
+    return map;
+}
+
+// ---- NUEVOS: categorías + búsqueda paginada ----
+export async function getCategories(): Promise<CategoryLite[]> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase
+        .from('catalogo_categories')
+        .select('slug, name')
+        .order('name', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as CategoryLite[];
+}
+
+export type SearchArgs = {
+    q?: string;
+    category?: string; // slug o 'all'
+    page?: number;     // 1-based
+    perPage?: number;  // default 12
+};
+export type SearchResult = {
+    items: ProductPublic[];
+    total: number;
+    page: number;
+    perPage: number;
+};
+
+export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
+    const q = (args.q ?? '').trim();
+    const category = (args.category ?? 'all').trim();
+    const perPage = Math.max(1, Math.min(args.perPage ?? 12, 60));
+    const page = Math.max(1, Math.floor(args.page ?? 1));
+    const from = (page - 1) * perPage;
+    const to = from + perPage - 1;
+
+    const supabase = await createServerClient();
+
+    // Si hay categoría, resolver IDs de productos mediante pivote
+    let productIdsFilter: string[] | null = null;
+    if (category && category !== 'all') {
+        const { data: cat } = await supabase
+            .from('catalogo_categories')
+            .select('id')
+            .eq('slug', category)
+            .maybeSingle();
+
+        if (!cat) {
+            return { items: [], total: 0, page, perPage };
+        }
+        const { data: piv } = await supabase
+            .from('catalogo_product_categories')
+            .select('product_id')
+            .eq('category_id', cat.id);
+
+        productIdsFilter = (piv ?? []).map((r) => r.product_id as string);
+        if (productIdsFilter.length === 0) {
+            return { items: [], total: 0, page, perPage };
+        }
+    }
+
+    // Query a la vista pública
+    let sel = supabase
+        .from('catalogo_v_products_public')
+        .select(
+            'id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at',
+            { count: 'exact' }
+        )
+        .order('created_at', { ascending: false });
+
+    if (q.length >= 2) {
+        sel = sel.ilike('name', `%${q}%`);
+    }
+    if (productIdsFilter) {
+        sel = sel.in('id', productIdsFilter);
+    }
+
+    sel = sel.range(from, to);
+
+    const { data, error, count } = await sel;
+    if (error) throw error;
+
+    return {
+        items: (data ?? []) as ProductPublic[],
+        total: count ?? 0,
+        page,
+        perPage,
+    };
 }

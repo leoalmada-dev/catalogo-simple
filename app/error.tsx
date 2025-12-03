@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 
 export default function GlobalError({
@@ -31,12 +32,7 @@ export default function GlobalError({
               >
                 Reintentar
               </button>
-              <a
-                href="/"
-                className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-neutral-50"
-              >
-                Ir al inicio
-              </a>
+              <Link href="/" className="underline">Volver al inicio</Link>
             </div>
 
             {process.env.NODE_ENV !== 'production' && error?.digest && (

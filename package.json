@@ -48,6 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
     "@vitest/coverage-v8": "^4.0.5",
+    "baseline-browser-mapping": "^2.8.32",
     "drizzle-kit": "^0.31.6",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.0.1",

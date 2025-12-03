@@ -1,4 +1,3 @@
-// components/admin/ImageManager.tsx
 'use client';
 
 import Image from 'next/image';
@@ -16,6 +15,17 @@ type Img = {
   position: number;
   variant_id: string | null;
 };
+
+function errorMessage(e: unknown, fallback = 'Error') {
+  if (e instanceof Error) return e.message;
+  try {
+    // para casos donde venga un Response.json ya parseado arriba
+    const maybe = e as { error?: string; message?: string };
+    return maybe.error || maybe.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export function ImageManager({
   productId,
@@ -61,7 +71,7 @@ export function ImageManager({
         const fd = new FormData();
         if (cleanVariantId) fd.append('variant_id', cleanVariantId);
         fd.append('file', file);
-        if (variantId) fd.append('variant_id', variantId);
+
         const res = await fetch(`/api/admin/products/${productId}/images`, {
           method: 'POST',
           body: fd,
@@ -73,8 +83,8 @@ export function ImageManager({
       }
       await refresh();
       toast.success('Imagen(es) subida(s)');
-    } catch (e: any) {
-      toast.error(e?.message || 'Error al subir');
+    } catch (e: unknown) {
+      toast.error(errorMessage(e, 'Error al subir'));
     } finally {
       setBusy(false);
     }
@@ -94,8 +104,8 @@ export function ImageManager({
       }
       await refresh();
       toast.success('Marcada como principal');
-    } catch (e: any) {
-      toast.error(e?.message || 'Error');
+    } catch (e: unknown) {
+      toast.error(errorMessage(e, 'Error'));
     } finally {
       setBusy(false);
     }
@@ -115,8 +125,8 @@ export function ImageManager({
       }
       await refresh();
       toast.success('ALT guardado');
-    } catch (e: any) {
-      toast.error(e?.message || 'Error al guardar ALT');
+    } catch (e: unknown) {
+      toast.error(errorMessage(e, 'Error al guardar ALT'));
     } finally {
       setBusy(false);
     }
@@ -134,8 +144,8 @@ export function ImageManager({
       }
       await refresh();
       toast.success('Imagen borrada');
-    } catch (e: any) {
-      toast.error(e?.message || 'Error al borrar');
+    } catch (e: unknown) {
+      toast.error(errorMessage(e, 'Error al borrar'));
     } finally {
       setBusy(false);
     }
@@ -162,7 +172,7 @@ export function ImageManager({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {items.map((img) => (
           <ImageCard
-            key={img.id}
+            key={`${img.id}-${img.alt ?? ''}`} // re-monta si cambia el ALT (evita setState en effect)
             img={img}
             busy={busy}
             onDelete={() => remove(img)}
@@ -193,18 +203,10 @@ function ImageCard({
 }) {
   const [altValue, setAltValue] = useState(img.alt ?? '');
 
-  useEffect(() => setAltValue(img.alt ?? ''), [img.alt]);
-
   return (
-    <figure className="rounded border p-2">
+    <figure className="flex h-full flex-col rounded border p-2">
       <div className="relative aspect-square w-full overflow-hidden rounded bg-neutral-50">
-        <Image
-          src={img.url}
-          alt={img.alt || img.name}
-          fill
-          sizes="200px"
-          className="object-cover"
-        />
+        <Image src={img.url} alt={img.alt || img.name} fill sizes="200px" className="object-cover" />
         {img.is_primary && (
           <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">
             Principal
@@ -212,7 +214,7 @@ function ImageCard({
         )}
       </div>
 
-      <figcaption className="mt-2 space-y-2">
+      <figcaption className="mt-2 flex flex-1 flex-col gap-2">
         <p className="truncate text-xs text-neutral-600">{img.name}</p>
 
         <div className="flex items-center gap-2">
@@ -233,21 +235,11 @@ function ImageCard({
           </Button>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={onMakePrimary}
-            disabled={busy || img.is_primary}
-          >
+        <div className="mt-auto grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={onMakePrimary} disabled={busy || img.is_primary}>
             Hacer principal
           </Button>
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={onDelete}
-            disabled={busy}
-          >
+          <Button variant="destructive" onClick={onDelete} disabled={busy}>
             Borrar
           </Button>
         </div>

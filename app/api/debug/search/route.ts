@@ -1,28 +1,60 @@
-import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const category = (searchParams.get('category') ?? '').toLowerCase().trim();
-  const q = (searchParams.get('q') ?? '').trim();
+type Preview = { id: string; slug: string; name: string };
 
-  const sb = await createServerClient();
+export async function GET(request: NextRequest) {
+  const supabase = await createServerClient();
+  const url = new URL(request.url);
+  const q = (url.searchParams.get('q') || '').trim();
+  const categorySlug = (url.searchParams.get('category') || '').trim();
 
-  const cat = category && category !== 'all'
-    ? await sb.from('catalogo_categories').select('id,slug').eq('slug', category).maybeSingle()
-    : { data: null, error: null };
+  const out: Record<string, unknown> = {};
 
-  const piv = cat && cat.data
-    ? await sb.from('catalogo_product_categories').select('product_id').eq('category_id', cat.data.id)
-    : { data: null, error: null };
+  if (categorySlug) {
+    const catRes = await supabase
+      .from('catalogo_categories')
+      .select('id, slug, name')
+      .eq('slug', categorySlug)
+      .maybeSingle();
 
-  const ids = (piv.data ?? []).map((r: any) => r.product_id);
+    out.cat = catRes;
 
-  let qry = sb.from('catalogo_v_products_public').select('id,slug,name', { count: 'exact' });
-  if (q) qry = qry.or(`name.ilike.*${q.replace(/[%*]/g, '')}*,description.ilike.*${q.replace(/[%*]/g, '')}*`);
-  if (ids.length) qry = qry.in('id', ids);
+    const catId = catRes.data?.id;
+    if (catId) {
+      const piv = await supabase
+        .from('catalogo_product_categories')
+        .select('product_id')
+        .eq('category_id', catId);
 
-  const res = await qry.limit(5);
+      const ids = (piv.data ?? []).map((r) => r.product_id as string);
+      out.pivCount = ids.length;
+      out.ids = ids;
 
-  return NextResponse.json({ cat, pivCount: (piv.data ?? []).length, ids, preview: res.data, count: res.count });
+      if (ids.length > 0) {
+        const prev = await supabase
+          .from('catalogo_products')
+          .select('id, slug, name')
+          .in('id', ids.slice(0, 5));
+
+        out.preview = (prev.data ?? []) as Preview[];
+        out.count = (prev.data ?? []).length;
+      }
+    }
+  }
+
+  if (q) {
+    const search = await supabase
+      .from('catalogo_products')
+      .select('id, slug, name')
+      .ilike('name', `%${q}%`)
+      .limit(5);
+
+    out.search = search.data ?? [];
+  }
+
+  return NextResponse.json(out);
 }

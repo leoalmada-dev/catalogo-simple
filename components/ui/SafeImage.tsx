@@ -3,15 +3,19 @@
 import Image, { ImageProps } from 'next/image';
 import { useState } from 'react';
 
-export default function SafeImage(props: ImageProps & { fallbackSrc?: string }) {
-  const { src, fallbackSrc = '/no-image.svg', ...rest } = props;
-  const [errored, setErrored] = useState(false);
+type SafeProps = Omit<ImageProps, 'alt'> & {
+  alt: string;              // exigir alt siempre (evita warning a11y)
+  fallbackSrc?: string;     // por defecto usamos un asset local existente
+};
 
-  const finalSrc = (!src || errored) ? fallbackSrc : src;
+export default function SafeImage({ src, alt, fallbackSrc = '/next.svg', ...rest }: SafeProps) {
+  const [errored, setErrored] = useState(false);
+  const finalSrc = !src || errored ? fallbackSrc : src;
 
   return (
     <Image
       {...rest}
+      alt={alt}
       src={finalSrc}
       onError={() => setErrored(true)}
     />

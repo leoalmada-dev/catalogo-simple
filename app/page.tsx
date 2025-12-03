@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-import { getCategories, searchProducts } from '@/lib/data/catalog';
+import { getCategories, ProductPublic, searchProducts } from '@/lib/data/catalog';
 import CatalogFilters from '@/components/catalog/CatalogFilters';
 import ProductCard from '@/components/catalog/ProductCard';
 import PaginationControls from '@/components/catalog/PaginationControls';
@@ -50,7 +50,7 @@ export default async function Home({ searchParams }: { searchParams: SParams }) 
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {items.map((p) => (
+            {items.map((p: ProductPublic) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </section>

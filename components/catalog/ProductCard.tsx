@@ -1,5 +1,3 @@
-// components/catalog/ProductCard.tsx
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ProductPublic } from '@/lib/data/catalog';
 import { toPublicStorageUrl } from '@/lib/images';

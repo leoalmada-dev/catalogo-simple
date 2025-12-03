@@ -22,6 +22,7 @@ export default function EmptyState({
       <h2 className="text-lg font-semibold">No encontramos resultados</h2>
       <p className="mt-1 text-sm text-neutral-600">
         {q ? <>Probá acotar o cambiar tu búsqueda.</> : <>Probá ajustar los filtros.</>}
+        {category ? `No encontramos productos en “${category}”.` : 'No encontramos productos.'}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
