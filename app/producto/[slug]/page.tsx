@@ -151,11 +151,13 @@ export default async function ProductPage({ params }: Props) {
                     {/* Variantes elegibles + CTA */}
                     <VariantSelector
                         variants={variants}
+                        productId={p.id}
                         productName={p.name}
                         productSlug={p.slug}
                         showPrices={Boolean(p.effective_show_prices)}
                         currencyCode={config.currency_code || 'UYU'}
                         whatsappPhone={WHATSAPP_PHONE || undefined}
+                        source="product"
                     />
                 </div>
             </article>
