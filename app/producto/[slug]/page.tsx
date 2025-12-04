@@ -12,7 +12,7 @@ import {
     getCatalogConfig,
 } from '@/lib/data/catalog';
 import { toPublicStorageUrl } from '@/lib/images';
-import { WHATSAPP_PHONE, SITE_URL } from '@/lib/env';
+import { SITE_URL } from '@/lib/env';
 import VariantSelector from '@/components/catalog/VariantSelector';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
@@ -26,19 +26,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const title = p.name;
         const description = p.description ?? undefined;
 
+        const url = `${SITE_URL.replace(/\/$/, "")}/producto/${p.slug}`;
+
         return {
             title,
             description,
             openGraph: {
                 title,
                 description,
-                type: 'website',
+                type: "website", // 👈 volvemos a 'website' para respetar el tipo de Next
+                url,
                 images: ogImg ? [{ url: ogImg, width: 1200, height: 630 }] : undefined,
             },
-            alternates: { canonical: `/producto/${p.slug}` },
+            alternates: {
+                canonical: `/producto/${p.slug}`,
+            },
         };
     } catch {
-        return { title: 'Producto' };
+        return { title: "Producto" };
     }
 }
 
@@ -151,11 +156,12 @@ export default async function ProductPage({ params }: Props) {
                     {/* Variantes elegibles + CTA */}
                     <VariantSelector
                         variants={variants}
+                        productId={p.id}
                         productName={p.name}
                         productSlug={p.slug}
                         showPrices={Boolean(p.effective_show_prices)}
                         currencyCode={config.currency_code || 'UYU'}
-                        whatsappPhone={WHATSAPP_PHONE || undefined}
+                        source="product"
                     />
                 </div>
             </article>

@@ -16,11 +16,13 @@ export default function robots(): MetadataRoute.Robots {
     };
   }
 
+  const base = SITE_URL.replace(/\/$/, '');
+
   // Producción: permitir todo salvo /admin y exponer sitemap
   return {
     rules: [
       { userAgent: '*', allow: '/', disallow: ['/admin', '/admin/'] },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${base}/sitemap.xml`,
   };
 }

@@ -44,6 +44,12 @@ export type CatalogConfig = {
 
 export type CategoryLite = { slug: string; name: string };
 
+// tipo liviano para sitemap
+export type ProductSlugInfo = {
+    slug: string;
+    updated_at: string | null;
+};
+
 // ---- Error tipado para not found ----
 export class NotFoundError extends Error {
     readonly code = 'NOT_FOUND' as const;
@@ -224,4 +230,16 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
         page,
         perPage,
     };
+}
+
+// ---- helper para sitemap ----
+export async function getAllProductsSlugs(): Promise<ProductSlugInfo[]> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase
+        .from('catalogo_v_products_public')
+        .select('slug, updated_at')
+        .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []) as ProductSlugInfo[];
 }
