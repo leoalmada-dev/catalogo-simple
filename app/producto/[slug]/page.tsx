@@ -12,7 +12,7 @@ import {
     getCatalogConfig,
 } from '@/lib/data/catalog';
 import { toPublicStorageUrl } from '@/lib/images';
-import { WHATSAPP_PHONE, SITE_URL } from '@/lib/env';
+import { SITE_URL } from '@/lib/env';
 import VariantSelector from '@/components/catalog/VariantSelector';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
@@ -156,7 +156,6 @@ export default async function ProductPage({ params }: Props) {
                         productSlug={p.slug}
                         showPrices={Boolean(p.effective_show_prices)}
                         currencyCode={config.currency_code || 'UYU'}
-                        whatsappPhone={WHATSAPP_PHONE || undefined}
                         source="product"
                     />
                 </div>

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import path from 'node:path';
 
 export default defineConfig({
   test: {
@@ -11,5 +12,10 @@ export default defineConfig({
       reportsDirectory: './coverage',
       exclude: ['**/.next/**', '**/node_modules/**', '**/*.d.ts']
     }
-  }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname),
+    },
+  },
 });
