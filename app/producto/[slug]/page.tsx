@@ -26,19 +26,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const title = p.name;
         const description = p.description ?? undefined;
 
+        const url = `${SITE_URL.replace(/\/$/, "")}/producto/${p.slug}`;
+
         return {
             title,
             description,
             openGraph: {
                 title,
                 description,
-                type: 'website',
+                type: "website", // 👈 volvemos a 'website' para respetar el tipo de Next
+                url,
                 images: ogImg ? [{ url: ogImg, width: 1200, height: 630 }] : undefined,
             },
-            alternates: { canonical: `/producto/${p.slug}` },
+            alternates: {
+                canonical: `/producto/${p.slug}`,
+            },
         };
     } catch {
-        return { title: 'Producto' };
+        return { title: "Producto" };
     }
 }
 
