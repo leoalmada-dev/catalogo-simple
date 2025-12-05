@@ -40,6 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <head>
+        {/* Google Search Console verification */}
         <meta name="google-site-verification" content="CVZVmQ9X7PPfJNzLy3ie6pYh6Tp9ep-pregpk-gu4f4" />
         <script
           type="application/ld+json"
