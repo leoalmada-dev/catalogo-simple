@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/env";
 import UtmCapture from "@/components/analytics/UtmCapture";
 
-const SITE_NAME = "Catálogo Simple";
-const SITE_DESCRIPTION = "Catálogo SEO-first sin checkout";
+const SITE_NAME = "Pantera mini mayorista";
+const SITE_DESCRIPTION = "Catálogo de Pantera mini mayorista 🐆"; // o el texto que prefieras
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -40,6 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <head>
+        <meta name="google-site-verification" content="CVZVmQ9X7PPfJNzLy3ie6pYh6Tp9ep-pregpk-gu4f4" />
         <script
           type="application/ld+json"
           // JSON-LD de organización para todo el sitio
