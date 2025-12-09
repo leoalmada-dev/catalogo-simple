@@ -1,3 +1,4 @@
+// lib/utm.ts
 export type Utm = {
     utm_source?: string;
     utm_medium?: string;
@@ -6,11 +7,14 @@ export type Utm = {
     ts?: number; // epoch ms del set
 };
 
-export function captureUtmFromSearchParams(sp: URLSearchParams, ref?: string): Utm | null {
+export function captureUtmFromSearchParams(
+    sp: URLSearchParams,
+    ref?: string,
+): Utm | null {
     const u: Utm = {
-        utm_source: sp.get('utm_source') || undefined,
-        utm_medium: sp.get('utm_medium') || undefined,
-        utm_campaign: sp.get('utm_campaign') || undefined,
+        utm_source: sp.get("utm_source") || undefined,
+        utm_medium: sp.get("utm_medium") || undefined,
+        utm_campaign: sp.get("utm_campaign") || undefined,
         ref: ref || undefined,
         ts: Date.now(),
     };
@@ -28,5 +32,5 @@ export function parseUtmCookie(raw: string | undefined): Utm | null {
     }
 }
 
-export const UTM_COOKIE_NAME = 'utm';
+export const UTM_COOKIE_NAME = "utm";
 export const UTM_TTL_DAYS = 7;

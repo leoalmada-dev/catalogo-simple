@@ -171,8 +171,8 @@ export type SearchResult = {
 };
 
 export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
-    const q = (args.q ?? '').trim();
-    const category = (args.category ?? 'all').trim();
+    const rawQ = (args.q ?? "").trim();
+    const category = (args.category ?? "all").trim();
     const perPage = Math.max(1, Math.min(args.perPage ?? 12, 60));
     const page = Math.max(1, Math.floor(args.page ?? 1));
     const from = (page - 1) * perPage;
@@ -182,20 +182,21 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
 
     // Si hay categoría, resolver IDs de productos mediante pivote
     let productIdsFilter: string[] | null = null;
-    if (category && category !== 'all') {
+    if (category && category !== "all") {
         const { data: cat } = await supabase
-            .from('catalogo_categories')
-            .select('id')
-            .eq('slug', category)
+            .from("catalogo_categories")
+            .select("id")
+            .eq("slug", category)
             .maybeSingle();
 
         if (!cat) {
             return { items: [], total: 0, page, perPage };
         }
+
         const { data: piv } = await supabase
-            .from('catalogo_product_categories')
-            .select('product_id')
-            .eq('category_id', cat.id);
+            .from("catalogo_product_categories")
+            .select("product_id")
+            .eq("category_id", cat.id);
 
         productIdsFilter = (piv ?? []).map((r) => r.product_id as string);
         if (productIdsFilter.length === 0) {
@@ -203,20 +204,27 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
         }
     }
 
-    // Query a la vista pública
+    // ⚠️ Usamos la vista nueva con columna normalizada
     let sel = supabase
-        .from('catalogo_v_products_public')
+        .from("catalogo_v_products_public_search")
         .select(
-            'id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at',
-            { count: 'exact' }
+            "id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at",
+            { count: "exact" },
         )
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
 
-    if (q.length >= 2) {
-        sel = sel.ilike('name', `%${q}%`);
+    if (rawQ.length >= 2) {
+        // normalizamos query: minúsculas + sin tildes, para matchear con name_search
+        const normalizedQ = rawQ
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+
+        sel = sel.ilike("name_search", `%${normalizedQ}%`);
     }
+
     if (productIdsFilter) {
-        sel = sel.in('id', productIdsFilter);
+        sel = sel.in("id", productIdsFilter);
     }
 
     sel = sel.range(from, to);
