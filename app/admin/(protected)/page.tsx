@@ -124,7 +124,6 @@ export default async function AdminHome() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium">Importar CSV</span>
         <ImportCSVForm />
       </div>
     </div>
