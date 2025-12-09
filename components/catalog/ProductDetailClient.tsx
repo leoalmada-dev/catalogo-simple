@@ -1,7 +1,7 @@
 // components/catalog/ProductDetailClient.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { buildWaTrackingUrl } from "@/lib/whatsapp";
 
@@ -59,7 +59,6 @@ export default function ProductDetailClient({
     );
 
     const [activeImageIndex, setActiveImageIndex] = useState(0);
-    const [hasInteracted, setHasInteracted] = useState(false);
 
     const hasVariants = variants.length > 0;
     const hasImages = gallery.length > 0;
@@ -70,26 +69,6 @@ export default function ProductDetailClient({
     }, [variants, selectedVariantId]);
 
     const activeImage = gallery[activeImageIndex] ?? gallery[0] ?? null;
-
-    // Cuando el usuario CAMBIA la variante, intentamos matchear con la imagen cuyo alt contenga el nombre de la variante.
-    // No se ejecuta en el primer render para conservar la imagen principal.
-    useEffect(() => {
-        if (!hasInteracted) return;
-        if (!selectedVariant || gallery.length === 0) return;
-
-        const name = selectedVariant.name?.trim();
-        if (!name) return;
-
-        const lowerName = name.toLowerCase();
-
-        const matchIndex = gallery.findIndex((img) =>
-            img.alt.toLowerCase().includes(lowerName),
-        );
-
-        if (matchIndex >= 0) {
-            setActiveImageIndex(matchIndex);
-        }
-    }, [selectedVariant, gallery, hasInteracted]);
 
     const waHref = buildWaTrackingUrl({
         productId: product.id,
@@ -113,6 +92,25 @@ export default function ProductDetailClient({
     // Si hay variantes pero ninguna seleccionada, deshabilitamos el CTA
     const ctaDisabled = hasVariants && !selectedVariant;
     const linkHref = ctaDisabled ? undefined : waHref;
+
+    function handleVariantClick(variant: Variant) {
+        setSelectedVariantId(variant.id);
+
+        // Al cambiar de variante, intentamos matchear con la imagen cuyo alt contenga el nombre
+        if (!hasImages) return;
+        const name = variant.name?.trim();
+        if (!name) return;
+
+        const lowerName = name.toLowerCase();
+
+        const matchIndex = gallery.findIndex((img) =>
+            img.alt.toLowerCase().includes(lowerName),
+        );
+
+        if (matchIndex >= 0) {
+            setActiveImageIndex(matchIndex);
+        }
+    }
 
     return (
         <article
@@ -148,10 +146,7 @@ export default function ProductDetailClient({
                                 <button
                                     key={`${img.url}-${index}`}
                                     type="button"
-                                    onClick={() => {
-                                        setActiveImageIndex(index);
-                                        setHasInteracted(true);
-                                    }}
+                                    onClick={() => setActiveImageIndex(index)}
                                     className="group relative"
                                     aria-pressed={isActive}
                                     aria-label={`Ver imagen ${index + 1} del producto`}
@@ -220,10 +215,7 @@ export default function ProductDetailClient({
                                         <button
                                             key={v.id}
                                             type="button"
-                                            onClick={() => {
-                                                setSelectedVariantId(v.id);
-                                                setHasInteracted(true);
-                                            }}
+                                            onClick={() => handleVariantClick(v)}
                                             className={[
                                                 "rounded-full border px-3 py-1 text-xs transition",
                                                 isActive
