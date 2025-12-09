@@ -65,9 +65,8 @@ export default async function Home({
         >
           {total > 0 ? (
             <>
-              Mostrando <strong>{total}</strong> producto
-              {total !== 1 && "s"}
-              {hasFilters && " según los filtros aplicados."}
+              Mostrando {items.length} de {total} producto
+              {total !== 1 ? "s" : ""}.
             </>
           ) : hasFilters ? (
             <>No se encontraron productos con los filtros actuales.</>
@@ -85,7 +84,7 @@ export default async function Home({
         <>
           <section
             className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-            aria-label="Resultados del catálogo de productos"
+            aria-label="Resultados del catálogo"
           >
             {items.map((p: ProductPublic) => (
               <ProductCard key={p.id} product={p} />

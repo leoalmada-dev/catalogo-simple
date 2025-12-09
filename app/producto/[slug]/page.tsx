@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
@@ -14,8 +13,8 @@ import {
 } from "@/lib/data/catalog";
 import { toPublicStorageUrl } from "@/lib/images";
 import { SITE_URL } from "@/lib/env";
-import VariantSelector from "@/components/catalog/VariantSelector";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import ProductDetailClient from "@/components/catalog/ProductDetailClient";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -54,13 +53,13 @@ export default async function ProductPage({ params }: Props) {
     const { slug } = await params;
 
     let p: Awaited<ReturnType<typeof getProductBySlug>>;
-    let gallery: Awaited<ReturnType<typeof getProductImages>>;
+    let galleryRaw: Awaited<ReturnType<typeof getProductImages>>;
     let variants: Awaited<ReturnType<typeof getProductVariants>>;
     let config: Awaited<ReturnType<typeof getCatalogConfig>>;
 
     try {
         p = await getProductBySlug(slug);
-        [gallery, variants, config] = await Promise.all([
+        [galleryRaw, variants, config] = await Promise.all([
             getProductImages(p.id),
             getProductVariants(p.id),
             getCatalogConfig(),
@@ -72,7 +71,30 @@ export default async function ProductPage({ params }: Props) {
     }
 
     const mainImg = toPublicStorageUrl(p.primary_image);
-    const currencyCode = (config.currency_code || "UYU") as Intl.NumberFormatOptions["currency"];
+
+    // Normalizamos galería para el cliente: URL pública + alt
+    type ClientImage = { url: string; alt: string };
+
+    const seen = new Set<string>();
+    const gallery: ClientImage[] = [];
+
+    if (mainImg) {
+        gallery.push({ url: mainImg, alt: p.name });
+        seen.add(mainImg);
+    }
+
+    for (const g of galleryRaw) {
+        const url = toPublicStorageUrl(g.path);
+        if (!url || seen.has(url)) continue;
+        gallery.push({
+            url,
+            alt: g.alt ?? p.name,
+        });
+        seen.add(url);
+    }
+
+    // 👇 aseguramos string puro, sin undefined
+    const currencyCode: string = config.currency_code ?? "UYU";
 
     const jsonLd = {
         "@context": "https://schema.org",
@@ -102,86 +124,23 @@ export default async function ProductPage({ params }: Props) {
                 ]}
             />
 
-            <article
-                className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                aria-label={p.name}
-            >
-                <section
-                    className="space-y-3"
-                    aria-label={`Imágenes del producto ${p.name}`}
-                >
-                    <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-50">
-                        {mainImg && (
-                            <Image
-                                src={mainImg}
-                                alt={p.name}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, 50vw"
-                                priority
-                            />
-                        )}
-                    </div>
-
-                    {gallery.length > 1 && (
-                        <div className="grid grid-cols-4 gap-2">
-                            {gallery.map((g, i) => {
-                                const url = toPublicStorageUrl(g.path);
-                                if (!url) return null;
-                                return (
-                                    <div
-                                        key={`${g.path}-${i}`}
-                                        className="relative aspect-square overflow-hidden rounded-xl bg-neutral-50"
-                                    >
-                                        <Image
-                                            src={url}
-                                            alt={g.alt ?? p.name}
-                                            fill
-                                            className="object-cover"
-                                            sizes="25vw"
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </section>
-
-                <section className="space-y-4">
-                    <h1 className="text-2xl font-semibold">{p.name}</h1>
-
-                    {p.min_price_visible != null ? (
-                        <p className="text-xl font-medium">
-                            Desde{" "}
-                            {new Intl.NumberFormat("es-UY", {
-                                style: "currency",
-                                currency: currencyCode,
-                            }).format(Number(p.min_price_visible))}
-                        </p>
-                    ) : (
-                        <p className="text-sm text-neutral-600">Consultar precio</p>
-                    )}
-
-                    {p.description && (
-                        <p className="whitespace-pre-line text-sm leading-6 text-neutral-800">
-                            {p.description}
-                        </p>
-                    )}
-
-                    <VariantSelector
-                        variants={variants}
-                        productId={p.id}
-                        productName={p.name}
-                        productSlug={p.slug}
-                        showPrices={Boolean(p.effective_show_prices)}
-                        currencyCode={config.currency_code || "UYU"}
-                        source="product"
-                    />
-                </section>
-            </article>
+            <ProductDetailClient
+                product={{
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    description: p.description ?? null,
+                    min_price_visible: p.min_price_visible ?? null,
+                }}
+                gallery={gallery}
+                variants={variants}
+                currencyCode={currencyCode}
+                showPrices={Boolean(p.effective_show_prices)}
+            />
 
             <script
                 type="application/ld+json"
+                // JSON-LD para SEO del producto
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
         </div>
