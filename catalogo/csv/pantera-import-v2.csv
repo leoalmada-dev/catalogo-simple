@@ -1,0 +1,63 @@
+name,slug,description,status,variant_sku,variant_name,variant_price,variant_available,variant_stock
+Café Iguaçu,cafe-iguacu,Café Iguaçu.,published,SKU-IGU-LATA,Lata,320,TRUE,0
+Café Nescafé,cafe-nescafe,Variedades de Nescafé.,published,SKU-NES-VID,Vidrio,330,TRUE,0
+Café Nescafé,cafe-nescafe,Variedades de Nescafé.,published,SKU-NES-LAT150,Lata 150g,270,TRUE,0
+Dolce Gusto,dolce-gusto,Cápsulas Dolce Gusto.,published,SKU-DOLCE-PACK,Pack,280,TRUE,0
+
+Dove MEN + CARE (Hombre),dove-men-care,Desodorante Dove MEN + CARE.,published,SKU-DOVE-MEN-GDE,Grande,250,TRUE,0
+Dove MEN + CARE (Hombre),dove-men-care,Desodorante Dove MEN + CARE.,published,SKU-DOVE-MEN-CHI,Chico,180,TRUE,0
+Dove MEN + CARE (Hombre),dove-men-care,Desodorante Dove MEN + CARE.,published,SKU-DOVE-MEN-CLIN,Clinical,320,TRUE,0
+Rexona Clinical Men,rexona-clinical-men,Desodorante Rexona Clinical Men.,published,SKU-REX-CLIN-MEN,Clinical,320,TRUE,0
+Odorono,odorono,Desodorante Odorono.,published,SKU-ODORONO-SPRAY,Spray,130,TRUE,0
+Rexona aerosol,rexona-aerosol,Desodorante Rexona en aerosol.,published,SKU-REX-AERO-GDE,Grande,240,TRUE,0
+Rexona aerosol,rexona-aerosol,Desodorante Rexona en aerosol.,published,SKU-REX-AERO-CHI,Chico,180,TRUE,0
+Axe aerosol,axe-aerosol,Desodorante Axe en aerosol.,published,SKU-AXE-AERO,Spray,150,TRUE,0
+Toallitas húmedas bebé,toallitas-bebe,Toallitas húmedas para bebé.,published,SKU-TOALLITAS-BB,Pack,130,TRUE,0
+
+Colgate Luminous White,colgate-luminous-white,Pasta dental Luminous White 70g.,published,SKU-LUMINOUS-70G,70g,180,TRUE,0
+Colgate Total 12,colgate-total-12,Pasta dental Total 12 90g.,published,SKU-TOTAL12-90G,90g,160,TRUE,0
+Colgate clásica,colgate-clasica,Pasta dental Colgate 180g.,published,SKU-COLGATE-180G,180g,140,TRUE,0
+
+Jabón Astral plateado,astral-plateado,Jabón de tocador Astral.,published,SKU-ASTRAL-UNID,Unidad,45,TRUE,0
+Jabón Rexona tocador,rexona-tocador,Jabón de tocador Rexona (pack x6).,published,SKU-REXONA-X6,Pack x6,180,TRUE,0
+Jabón Dove tocador,jabon-dove-tocador,Jabón de tocador Dove (pack x8).,published,SKU-DOVE-X8,Pack x8,400,TRUE,0
+
+Sapolio mata moscas,sapolio-mata-moscas,Insecticida Sapolio mata moscas.,published,SKU-SAP-MOSCAS,Spray,110,TRUE,0
+Júpiter mata todo,jupiter-mata-todo,Insecticida multiuso Júpiter.,published,SKU-JUPITER-MATA-TODO,Spray,130,TRUE,0
+Sapolio ambiente,sapolio-ambiente,Aromatizante Sapolio ambiente.,published,SKU-SAP-AMBIENTE,Ambientador,90,TRUE,0
+
+Shampoo Pantene,shampoo-pantene,Shampoo Pantene (pack).,published,SKU-PANTENE-PACK,Pack,430,TRUE,0
+Shampoo Dove,shampoo-dove,Shampoo Dove (pack).,published,SKU-DOVE-SHAMPOO-PACK,Pack,430,TRUE,0
+Shampoo Elvive,shampoo-elvive,Shampoo Elvive (pack).,published,SKU-ELVIVE-PACK,Pack,440,TRUE,0
+Head & Shoulders,shampoo-head-shoulders,Shampoo Head & Shoulders (pack).,published,SKU-HS-PACK,Pack,450,TRUE,0
+
+Cotonmax,cotonmax-3l,Suavizante Cotonmax 3L.,published,SKU-COTONMAX-3L,3L,330,TRUE,0
+Aqua Fast,aqua-fast-5l,Detergente Aqua Fast 5L.,published,SKU-AQUA-FAST-5L,5L,350,TRUE,0
+Nevex diluir,nevex-diluir-3l,Detergente Nevex para diluir 3L.,published,SKU-NEVEX-3L,3L,320,TRUE,0
+Skip diluir,skip-diluir-3l,Detergente Skip para diluir 3L.,published,SKU-SKIP-3L,3L,335,TRUE,0
+
+Suavizante Aqua,suavizante-aqua,Suavizante Aqua para ropa.,published,SKU-SUAV-AQUA-5L,5L,300,TRUE,0
+Suavizante Aqua,suavizante-aqua,Suavizante Aqua para ropa.,published,SKU-SUAV-AQUA-2L,2L,120,TRUE,0
+
+Detergente Hábito,detergente-habito-5l,Detergente Hábito 5L.,published,SKU-HABITO-5L,5L,280,TRUE,0
+
+Jabón de manos,jabon-manos,Jabón líquido para manos.,published,SKU-JABON-MANOS-1L,1L,130,TRUE,0
+Jabón de manos,jabon-manos,Jabón líquido para manos.,published,SKU-JABON-MANOS-COMBO,1L + chico,180,TRUE,0
+
+Rollo Nova,rollo-nova,Rollos de cocina Nova.,published,SKU-ROLLO-NOVA-250H,250h,70,TRUE,0
+Rollo Nova,rollo-nova,Rollos de cocina Nova.,published,SKU-ROLLO-NOVA-MEGA-G,Mega G,180,TRUE,0
+
+Trapos de piso,trapo-piso-g,Trapo de piso grande.,published,SKU-TRAPO-PISO-G,Grande,70,TRUE,0
+Rejillas,rejillas-gx2,Pack de rejillas G x2.,published,SKU-REJILLAS-GX2,G x2,120,TRUE,0
+Pastillas sanitarias,pastillas-x20,Pastillas sanitarias x20.,published,SKU-PASTILLAS-X20,x20,150,TRUE,0
+Bolsas residuo gruesas,bolsas-residuo-20u,Bolsas de residuo gruesas.,published,SKU-BOLSAS-RESIDUO-20U,20u,150,TRUE,0
+Bolsas grandes,bolsas-grandes-10u,Bolsas tamaño grande.,published,SKU-BOLSAS-GRANDES-10U,10u,200,TRUE,0
+
+Desengrasante multiuso,desengrasante-multiuso,Desengrasante multiuso 1L.,published,SKU-DESENGRASANTE-1L,1L,280,TRUE,0
+Perfumol,perfumol,Perfumol concentrado para ambientes.,published,SKU-PERFUMOL-10L,10L concentrado,370,TRUE,0
+Perfumol,perfumol,Perfumol concentrado para ambientes.,published,SKU-PERFUMOL-1L,1L (rinde 10L),300,TRUE,0
+Hipoclorito concentrado,hipoclorito-concentrado,Hipoclorito concentrado 10L.,published,SKU-HIPOC-10L,10L,350,TRUE,0
+Cloro puro,cloro-puro-3l,Cloro puro 3L (rinde 10L).,published,SKU-CLORO-3L,3L (rinde 10L),280,TRUE,0
+
+Esponja de bronce,esponja-bronce,Esponjas de bronce para limpieza.,published,SKU-ESPONJA-1U,1u,45,TRUE,0
+Esponja de bronce,esponja-bronce,Esponjas de bronce para limpieza.,published,SKU-ESPONJA-3U,3u,100,TRUE,0
