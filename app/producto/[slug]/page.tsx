@@ -1,20 +1,21 @@
-export const dynamic = 'force-dynamic';
+// app/producto/[slug]/page.tsx
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+export const fetchCache = "force-no-store";
 
-import Image from 'next/image';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import Image from "next/image";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import {
     getProductBySlug,
     getProductImages,
     getProductVariants,
     getCatalogConfig,
-} from '@/lib/data/catalog';
-import { toPublicStorageUrl } from '@/lib/images';
-import { SITE_URL } from '@/lib/env';
-import VariantSelector from '@/components/catalog/VariantSelector';
-import Breadcrumbs from '@/components/ui/Breadcrumbs';
+} from "@/lib/data/catalog";
+import { toPublicStorageUrl } from "@/lib/images";
+import { SITE_URL } from "@/lib/env";
+import VariantSelector from "@/components/catalog/VariantSelector";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -34,9 +35,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             openGraph: {
                 title,
                 description,
-                type: "website", // 👈 volvemos a 'website' para respetar el tipo de Next
+                type: "website",
                 url,
-                images: ogImg ? [{ url: ogImg, width: 1200, height: 630 }] : undefined,
+                images: ogImg
+                    ? [{ url: ogImg, width: 1200, height: 630 }]
+                    : undefined,
             },
             alternates: {
                 canonical: `/producto/${p.slug}`,
@@ -50,11 +53,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
     const { slug } = await params;
 
-    // 1) Fetch/compute dentro del try...
     let p: Awaited<ReturnType<typeof getProductBySlug>>;
     let gallery: Awaited<ReturnType<typeof getProductImages>>;
     let variants: Awaited<ReturnType<typeof getProductVariants>>;
     let config: Awaited<ReturnType<typeof getCatalogConfig>>;
+
     try {
         p = await getProductBySlug(slug);
         [gallery, variants, config] = await Promise.all([
@@ -64,17 +67,16 @@ export default async function ProductPage({ params }: Props) {
         ]);
     } catch (e: unknown) {
         const err = e as { code?: string };
-        if (err?.code === 'NOT_FOUND') return notFound();
+        if (err?.code === "NOT_FOUND") return notFound();
         throw e;
     }
 
-    // 2) Derivados (fuera del try)
     const mainImg = toPublicStorageUrl(p.primary_image);
-    const currencyCode = (config.currency_code || 'UYU') as Intl.NumberFormatOptions['currency'];
+    const currencyCode = (config.currency_code || "UYU") as Intl.NumberFormatOptions["currency"];
 
     const jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
+        "@context": "https://schema.org",
+        "@type": "Product",
         name: p.name,
         image: mainImg ? [mainImg] : undefined,
         description: p.description ?? undefined,
@@ -82,26 +84,32 @@ export default async function ProductPage({ params }: Props) {
         offers:
             p.min_price_visible != null
                 ? {
-                    '@type': 'Offer',
-                    priceCurrency: config.currency_code || 'UYU',
+                    "@type": "Offer",
+                    priceCurrency: config.currency_code || "UYU",
                     price: Number(p.min_price_visible).toFixed(2),
-                    availability: 'https://schema.org/InStock',
+                    availability: "https://schema.org/InStock",
                 }
                 : undefined,
     };
 
-    // 3) Render
     return (
-        <>
+        <div className="space-y-4">
             <Breadcrumbs
                 items={[
-                    { label: 'Inicio', href: '/' },
-                    { label: 'Catálogo', href: '/' },
+                    { label: "Inicio", href: "/" },
+                    { label: "Catálogo", href: "/" },
                     { label: p.name, href: `/producto/${p.slug}` },
                 ]}
             />
-            <article className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-3">
+
+            <article
+                className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                aria-label={p.name}
+            >
+                <section
+                    className="space-y-3"
+                    aria-label={`Imágenes del producto ${p.name}`}
+                >
                     <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-50">
                         {mainImg && (
                             <Image
@@ -125,23 +133,28 @@ export default async function ProductPage({ params }: Props) {
                                         key={`${g.path}-${i}`}
                                         className="relative aspect-square overflow-hidden rounded-xl bg-neutral-50"
                                     >
-                                        <Image src={url} alt={g.alt ?? p.name} fill className="object-cover" sizes="25vw" />
+                                        <Image
+                                            src={url}
+                                            alt={g.alt ?? p.name}
+                                            fill
+                                            className="object-cover"
+                                            sizes="25vw"
+                                        />
                                     </div>
                                 );
                             })}
                         </div>
                     )}
-                </div>
+                </section>
 
-                <div className="space-y-4">
+                <section className="space-y-4">
                     <h1 className="text-2xl font-semibold">{p.name}</h1>
 
-                    {/* Precio mínimo visible (si aplica) */}
                     {p.min_price_visible != null ? (
                         <p className="text-xl font-medium">
-                            Desde{' '}
-                            {new Intl.NumberFormat('es-UY', {
-                                style: 'currency',
+                            Desde{" "}
+                            {new Intl.NumberFormat("es-UY", {
+                                style: "currency",
                                 currency: currencyCode,
                             }).format(Number(p.min_price_visible))}
                         </p>
@@ -150,24 +163,27 @@ export default async function ProductPage({ params }: Props) {
                     )}
 
                     {p.description && (
-                        <p className="whitespace-pre-line text-sm leading-6 text-neutral-800">{p.description}</p>
+                        <p className="whitespace-pre-line text-sm leading-6 text-neutral-800">
+                            {p.description}
+                        </p>
                     )}
 
-                    {/* Variantes elegibles + CTA */}
                     <VariantSelector
                         variants={variants}
                         productId={p.id}
                         productName={p.name}
                         productSlug={p.slug}
                         showPrices={Boolean(p.effective_show_prices)}
-                        currencyCode={config.currency_code || 'UYU'}
+                        currencyCode={config.currency_code || "UYU"}
                         source="product"
                     />
-                </div>
+                </section>
             </article>
 
-            {/* JSON-LD para SEO */}
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        </>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+        </div>
     );
 }
