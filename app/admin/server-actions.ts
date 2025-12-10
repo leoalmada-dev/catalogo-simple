@@ -1,3 +1,4 @@
+// app/admin/server-actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -41,6 +42,14 @@ type ImageDB = {
   alt?: string | null;
   is_primary?: boolean | null;
   position?: number | null;
+};
+
+type CatalogConfigDB = {
+  id: number;
+  show_prices: boolean | null;
+  currency_code: string;
+  whatsapp: string | null;
+  updated_at: string | null;
 };
 
 /* =========================
@@ -148,7 +157,6 @@ export async function createProduct(data: ProductFormData) {
       slug: parsed.slug,
       description: parsed.description ?? null,
       status: parsed.status,
-      // sort_order: parsed.sort_order ?? 100, // si usás sort_order opcional
     })
     .select("id")
     .single();
@@ -172,7 +180,13 @@ export async function createProduct(data: ProductFormData) {
   revalidatePath("/admin");
 }
 
-export async function updateProduct({ id, data }: { id: string; data: ProductFormData }) {
+export async function updateProduct({
+  id,
+  data,
+}: {
+  id: string;
+  data: ProductFormData;
+}) {
   await requireAdmin();
   const supabase = await createServerClient();
   const parsed = productSchema.parse(data);
@@ -184,7 +198,6 @@ export async function updateProduct({ id, data }: { id: string; data: ProductFor
       slug: parsed.slug,
       description: parsed.description ?? null,
       status: parsed.status,
-      // sort_order: parsed.sort_order ?? 100,
     })
     .eq("id", id);
   if (error) throw error;
@@ -212,10 +225,16 @@ export async function deleteProduct(id: string) {
   await requireAdmin();
   const supabase = await createServerClient();
 
-  // borrar imágenes asociadas (tabla)
-  try { await supabase.from(T_IMAGES).delete().eq("product_id", id); } catch { /* noop */ }
-  // variantes
-  try { await supabase.from(T_VARIANTS).delete().eq("product_id", id); } catch { /* noop */ }
+  try {
+    await supabase.from(T_IMAGES).delete().eq("product_id", id);
+  } catch {
+    /* noop */
+  }
+  try {
+    await supabase.from(T_VARIANTS).delete().eq("product_id", id);
+  } catch {
+    /* noop */
+  }
   const { error } = await supabase.from(T_PRODUCTS).delete().eq("id", id);
   if (error) throw error;
 
@@ -225,10 +244,16 @@ export async function deleteProduct(id: string) {
 /* =========================
    ESTADO (toggle)
    ========================= */
-export async function setProductStatus(opts: { id: string; status: "draft" | "published" | "archived" }) {
+export async function setProductStatus(opts: {
+  id: string;
+  status: "draft" | "published" | "archived";
+}) {
   await requireAdmin();
   const supabase = await createServerClient();
-  const { error } = await supabase.from(T_PRODUCTS).update({ status: opts.status }).eq("id", opts.id);
+  const { error } = await supabase
+    .from(T_PRODUCTS)
+    .update({ status: opts.status })
+    .eq("id", opts.id);
   if (error) throw error;
   revalidatePath("/admin");
 }
@@ -245,14 +270,12 @@ export async function uploadImageAction(productId: string, form: FormData) {
   const bucket = process.env.STORAGE_BUCKET || "products";
   const key = `${productId}/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
 
-  // 1) subir a Storage
   const up = await supabase.storage.from(bucket).upload(key, file, {
     contentType: file.type || "application/octet-stream",
     upsert: false,
   });
   if (up.error) throw up.error;
 
-  // 2) es primaria si no hay imágenes previas
   const { count } = await supabase
     .from(T_IMAGES)
     .select("*", { head: true, count: "exact" })
@@ -260,7 +283,6 @@ export async function uploadImageAction(productId: string, form: FormData) {
 
   const is_primary = (count ?? 0) === 0;
 
-  // 3) insertar fila en la tabla
   const path = `${bucket}/${key}`;
   const { error: insErr } = await supabase.from(T_IMAGES).insert({
     product_id: productId,
@@ -291,7 +313,9 @@ export async function listImagesAction(productId: string) {
   if (error) throw error;
 
   return (data ?? []).map((i) => {
-    const objectPath = i.path.startsWith(`${bucket}/`) ? i.path.slice(bucket.length + 1) : i.path;
+    const objectPath = i.path.startsWith(`${bucket}/`)
+      ? i.path.slice(bucket.length + 1)
+      : i.path;
     const url = supabase.storage.from(bucket).getPublicUrl(objectPath).data.publicUrl;
     const name = i.alt ?? objectPath.split("/").pop() ?? objectPath;
     return { id: i.id, name, path: i.path, url };
@@ -303,7 +327,6 @@ export async function deleteImageAction(imageIdOrPath: string) {
   const supabase = await createServerClient();
   const bucket = process.env.STORAGE_BUCKET || "products";
 
-  // buscar fila por id o por path
   const byId = await supabase
     .from(T_IMAGES)
     .select("id, path, product_id")
@@ -311,20 +334,30 @@ export async function deleteImageAction(imageIdOrPath: string) {
     .maybeSingle();
   const row =
     byId.data ??
-    (await supabase
-      .from(T_IMAGES)
-      .select("id, path, product_id")
-      .eq("path", imageIdOrPath)
-      .maybeSingle()).data;
+    (
+      await supabase
+        .from(T_IMAGES)
+        .select("id, path, product_id")
+        .eq("path", imageIdOrPath)
+        .maybeSingle()
+    ).data;
 
   if (!row) return;
 
-  // borrar en Storage
-  const objectPath = row.path.startsWith(`${bucket}/`) ? row.path.slice(bucket.length + 1) : row.path;
-  try { await supabase.storage.from(bucket).remove([objectPath]); } catch { /* noop */ }
+  const objectPath = row.path.startsWith(`${bucket}/`)
+    ? row.path.slice(bucket.length + 1)
+    : row.path;
+  try {
+    await supabase.storage.from(bucket).remove([objectPath]);
+  } catch {
+    /* noop */
+  }
 
-  // borrar de la tabla
-  try { await supabase.from(T_IMAGES).delete().eq("id", row.id); } catch { /* noop */ }
+  try {
+    await supabase.from(T_IMAGES).delete().eq("id", row.id);
+  } catch {
+    /* noop */
+  }
 
   revalidatePath(`/admin/products/${row.product_id}/images`);
 }
@@ -339,7 +372,7 @@ const csvRowV2 = z.object({
   status: z.enum(["draft", "published", "archived"]).default("draft"),
   variant_sku: z.string().optional().nullable(),
   variant_name: z.string().optional().nullable(),
-  variant_price: z.string().optional().nullable(), // decimal
+  variant_price: z.string().optional().nullable(),
   variant_available: z.string().optional().nullable(),
   variant_stock: z.string().optional().nullable(),
 });
@@ -348,9 +381,11 @@ export async function exportCSVv2() {
   await requireAdmin();
   const supabase = await createServerClient();
 
-  const { data: products } = (await supabase.from(T_PRODUCTS).select("*")) as unknown as {
-    data: ProductDB[];
-  };
+  const { data: products } = (await supabase
+    .from(T_PRODUCTS)
+    .select("*")) as unknown as {
+      data: ProductDB[];
+    };
   const { data: variants } = (await supabase
     .from(T_VARIANTS)
     .select("product_id, sku, name, price_cents, is_available, stock")) as unknown as {
@@ -404,7 +439,10 @@ export async function importCSVv2(form: FormData) {
   if (!file) return { ok: 0, fail: 0, errors: [] as string[] };
 
   const text = await file.text();
-  const rows: unknown[] = parse(text, { columns: true, skip_empty_lines: true });
+  const rows: unknown[] = parse(text, {
+    columns: true,
+    skip_empty_lines: true,
+  });
   let ok = 0,
     fail = 0;
   const errors: string[] = [];
@@ -414,7 +452,6 @@ export async function importCSVv2(form: FormData) {
       const r = csvRowV2.parse(rows[i]);
       const supabase = await createServerClient();
 
-      // Producto por slug (upsert puede no devolver fila si no hubo cambios)
       const { data: prodMaybe, error: upsertErr } = (await supabase
         .from(T_PRODUCTS)
         .upsert(
@@ -437,14 +474,20 @@ export async function importCSVv2(form: FormData) {
           .from(T_PRODUCTS)
           .select("id")
           .eq("slug", r.slug)
-          .maybeSingle()) as unknown as { data: { id: string } | null; error: unknown };
+          .maybeSingle()) as unknown as {
+            data: { id: string } | null;
+            error: unknown;
+          };
         if (selErr) throw selErr;
-        if (!prodBySlug) throw new Error(`Producto con slug "${r.slug}" no encontrado tras upsert`);
+        if (!prodBySlug)
+          throw new Error(`Producto con slug "${r.slug}" no encontrado tras upsert`);
         productId = prodBySlug.id;
       }
 
       if (r.variant_sku) {
-        const price = r.variant_price ? Number(String(r.variant_price).replace(",", ".")) : 0;
+        const price = r.variant_price
+          ? Number(String(r.variant_price).replace(",", "."))
+          : 0;
         const available = (r.variant_available ?? "").toLowerCase();
         const is_available = ["1", "true", "sí", "si", "yes"].includes(available);
 
@@ -473,4 +516,58 @@ export async function importCSVv2(form: FormData) {
   }
 
   return { ok, fail, errors };
+}
+// =========================
+// CONFIG CATÁLOGO (show_prices global)
+// =========================
+
+export async function getCatalogConfigForAdmin() {
+  await requireAdmin();
+  const supabase = await createServerClient();
+
+  const { data, error } = (await supabase
+    .from("catalogo_config")
+    .select("id, show_prices, currency_code, whatsapp, updated_at")
+    .eq("id", 1)
+    .maybeSingle()) as unknown as {
+      data: CatalogConfigDB | null;
+      error: unknown;
+    };
+
+  if (error || !data) {
+    // fallback seguro: el toggle siempre recibe un boolean
+    return {
+      show_prices: true,
+      updated_at: null as string | null,
+    };
+  }
+
+  return {
+    show_prices: !!data.show_prices,
+    updated_at: data.updated_at,
+  };
+}
+
+export async function updateCatalogConfigShowPrices(show: boolean) {
+  await requireAdmin();
+  const supabase = await createServerClient();
+
+  const now = new Date().toISOString();
+
+  // 🔧 Sólo UPDATE, nada de upsert para no chocar con RLS en INSERT
+  const { error } = await supabase
+    .from("catalogo_config")
+    .update({
+      show_prices: show,
+      updated_at: now,
+    })
+    .eq("id", 1);
+
+  if (error) throw error;
+
+  // Si no hay fila con id=1, no se actualiza nada, pero tampoco rompe.
+  // Podés crear esa fila 1 vez a mano en Supabase.
+
+  revalidatePath("/admin");
+  revalidatePath("/");
 }

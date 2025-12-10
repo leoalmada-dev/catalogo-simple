@@ -1,13 +1,13 @@
 // components/catalog/ProductDetailClient.tsx
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import { buildWaTrackingUrl } from "@/lib/whatsapp";
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import { buildWaTrackingUrl } from '@/lib/whatsapp';
 
 type ProductImage = {
     url: string;
-    alt: string | null;
+    alt: string;
 };
 
 type Variant = {
@@ -25,32 +25,24 @@ type ProductDetailClientProps = {
         name: string;
         slug: string;
         description: string | null;
-        min_price_visible: number | null;
+        min_price_cents: number | null;
+        effective_show_prices: boolean;
     };
     gallery: ProductImage[];
     variants: Variant[];
     currencyCode: string;
-    showPrices: boolean;
 };
 
 function formatMoney(cents: number, currency: string) {
     const value = (cents ?? 0) / 100;
     try {
-        return new Intl.NumberFormat("es-UY", {
-            style: "currency",
+        return new Intl.NumberFormat('es-UY', {
+            style: 'currency',
             currency,
         }).format(value);
     } catch {
-        return `${value.toLocaleString("es-UY")} ${currency}`;
+        return `${value.toLocaleString('es-UY')} ${currency}`;
     }
-}
-
-// Normaliza para comparar sin tildes y en minúsculas
-function normalize(text: string) {
-    return text
-        .normalize("NFD")
-        .replace(/\p{Diacritic}/gu, "")
-        .toLowerCase();
 }
 
 export default function ProductDetailClient({
@@ -58,10 +50,8 @@ export default function ProductDetailClient({
     gallery,
     variants,
     currencyCode,
-    showPrices,
 }: ProductDetailClientProps) {
     // 👉 Si hay solo 1 variante, la seleccionamos de entrada.
-    // Si hay 0 o más de 1, arrancamos sin selección.
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
         variants.length === 1 ? variants[0].id : null,
     );
@@ -81,19 +71,20 @@ export default function ProductDetailClient({
     const waHref = buildWaTrackingUrl({
         productId: product.id,
         productSlug: product.slug,
-        source: "product",
+        source: 'product',
         variantId: selectedVariant?.id,
         productName: product.name,
         variantLabel: selectedVariant?.name ?? undefined,
     });
 
-    // 🔧 Nueva lógica de stock:
-    // - No mostramos números
-    // - Solo mostramos "Sin stock" cuando stock <= 0
-    const showOutOfStock =
-        selectedVariant && typeof selectedVariant.stock === "number"
-            ? selectedVariant.stock <= 0
-            : false;
+    const showPrices = product.effective_show_prices;
+
+    const stockLabel =
+        !selectedVariant || typeof selectedVariant.stock !== 'number'
+            ? null
+            : selectedVariant.stock > 0
+                ? null // solo mostramos cuando NO hay stock
+                : 'Sin stock';
 
     // Si hay variantes pero ninguna seleccionada, deshabilitamos el CTA
     const ctaDisabled = hasVariants && !selectedVariant;
@@ -102,29 +93,25 @@ export default function ProductDetailClient({
     function handleVariantClick(variant: Variant) {
         setSelectedVariantId(variant.id);
 
+        // Al cambiar de variante, intentamos matchear con la imagen cuyo alt contenga el nombre
         if (!hasImages) return;
-
-        const name = variant.name?.trim() || variant.sku?.trim();
+        const name = variant.name?.trim();
         if (!name) return;
 
-        const target = normalize(name);
+        const altCandidates = [name, variant.sku].filter(Boolean).map((s) => s!.toLowerCase());
 
-        // Buscamos en TODAS las imágenes (incluida la principal),
-        // matcheando por ALT de forma robusta:
-        // - sin tildes
-        // - minúsculas
-        // - alt puede ser más corto o más largo que el nombre de la variante
         const matchIndex = gallery.findIndex((img) => {
-            if (!img.alt) return false;
-            const altNorm = normalize(img.alt);
-            if (!altNorm) return false;
-            return altNorm.includes(target) || target.includes(altNorm);
+            const altLower = img.alt.toLowerCase();
+            return altCandidates.some((c) => altLower.includes(c));
         });
 
         if (matchIndex >= 0) {
             setActiveImageIndex(matchIndex);
         }
     }
+
+    const canShowHeaderPrice =
+        showPrices && product.min_price_cents != null && product.min_price_cents > 0;
 
     return (
         <article
@@ -140,7 +127,7 @@ export default function ProductDetailClient({
                     {activeImage && (
                         <Image
                             src={activeImage.url}
-                            alt={activeImage.alt || product.name}
+                            alt={activeImage.alt}
                             fill
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
@@ -167,15 +154,15 @@ export default function ProductDetailClient({
                                 >
                                     <div
                                         className={[
-                                            "relative aspect-square overflow-hidden rounded-xl bg-neutral-50 border-2",
+                                            'relative aspect-square overflow-hidden rounded-xl bg-neutral-50 border-2',
                                             isActive
-                                                ? "border-neutral-900"
-                                                : "border-transparent group-hover:border-neutral-400",
-                                        ].join(" ")}
+                                                ? 'border-neutral-900'
+                                                : 'border-transparent group-hover:border-neutral-400',
+                                        ].join(' ')}
                                     >
                                         <Image
                                             src={img.url}
-                                            alt={img.alt || product.name}
+                                            alt={img.alt}
                                             fill
                                             className="object-cover"
                                             sizes="25vw"
@@ -192,13 +179,10 @@ export default function ProductDetailClient({
             <section className="space-y-4">
                 <h1 className="text-2xl font-semibold">{product.name}</h1>
 
-                {product.min_price_visible != null ? (
+                {canShowHeaderPrice ? (
                     <p className="text-xl font-medium">
-                        Desde{" "}
-                        {new Intl.NumberFormat("es-UY", {
-                            style: "currency",
-                            currency: currencyCode,
-                        }).format(Number(product.min_price_visible))}
+                        Desde{' '}
+                        {formatMoney(product.min_price_cents!, currencyCode)}
                     </p>
                 ) : (
                     <p className="text-sm text-neutral-600">Consultar precio</p>
@@ -231,12 +215,12 @@ export default function ProductDetailClient({
                                             type="button"
                                             onClick={() => handleVariantClick(v)}
                                             className={[
-                                                "rounded-full border px-3 py-1 text-xs transition",
+                                                'rounded-full border px-3 py-1 text-xs transition',
                                                 isActive
-                                                    ? "border-neutral-900 bg-neutral-900 text-white"
-                                                    : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-500",
-                                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                                            ].join(" ")}
+                                                    ? 'border-neutral-900 bg-neutral-900 text-white'
+                                                    : 'border-neutral-300 bg-white text-neutral-800 hover:border-neutral-500',
+                                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                                            ].join(' ')}
                                             aria-pressed={isActive}
                                         >
                                             {label}
@@ -276,8 +260,8 @@ export default function ProductDetailClient({
                                 </p>
                             )}
 
-                            {showOutOfStock && (
-                                <p className="text-xs text-red-600">Sin stock</p>
+                            {stockLabel && (
+                                <p className="text-xs text-neutral-600">{stockLabel}</p>
                             )}
                         </div>
                     )}
@@ -294,10 +278,10 @@ export default function ProductDetailClient({
                         }
                     }}
                     className={[
-                        "inline-flex w-full items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition",
-                        "hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                        ctaDisabled ? "pointer-events-none opacity-60" : "",
-                    ].join(" ")}
+                        'inline-flex w-full items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition',
+                        'hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                        ctaDisabled ? 'pointer-events-none opacity-60' : '',
+                    ].join(' ')}
                     aria-disabled={ctaDisabled}
                     aria-label={
                         ctaDisabled
@@ -308,7 +292,7 @@ export default function ProductDetailClient({
                                 : `Consultar por WhatsApp sobre ${product.name}`
                     }
                 >
-                    {ctaDisabled ? "Seleccioná una variante" : "Consultar por WhatsApp"}
+                    {ctaDisabled ? 'Seleccioná una variante' : 'Consultar por WhatsApp'}
                 </a>
             </section>
         </article>
