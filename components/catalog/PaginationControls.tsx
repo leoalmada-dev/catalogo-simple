@@ -41,10 +41,13 @@ export default function PaginationControls({
         onClick={() => go(page - 1)}
         disabled={!canPrev || isPending}
         aria-disabled={!canPrev || isPending}
-        className="rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
+        className="inline-flex items-center gap-1 rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
         aria-label="Página anterior"
       >
-        ← Anterior
+        <span aria-hidden="true" className="text-xs">
+          ‹
+        </span>
+        <span>Anterior</span>
       </button>
 
       <span
@@ -61,10 +64,13 @@ export default function PaginationControls({
         onClick={() => go(page + 1)}
         disabled={!canNext || isPending}
         aria-disabled={!canNext || isPending}
-        className="rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
+        className="inline-flex items-center gap-1 rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
         aria-label="Página siguiente"
       >
-        Siguiente →
+        <span>Siguiente</span>
+        <span aria-hidden="true" className="text-xs">
+          ›
+        </span>
       </button>
     </nav>
   );

@@ -3,6 +3,13 @@
 
 import { FormEvent, useMemo, useRef, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectValue,
+  SelectItem,
+} from "@/components/ui/select";
 
 type Cat = { slug: string; name: string };
 
@@ -106,32 +113,37 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
           </button>
         </div>
 
-        {/* Filtro por categoría */}
+        {/* Filtro por categoría con shadcn/ui Select */}
         <div className="flex w-full items-center gap-2 sm:w-auto">
-          <label htmlFor="category-select" className="sr-only">
+          <label htmlFor="category-select-trigger" className="sr-only">
             Filtrar por categoría
           </label>
 
-          <select
-            id="category-select"
-            name="category"
+          <Select
             value={catFromUrl}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full rounded-xl border bg-white px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:w-64"
-            aria-label="Filtrar por categoría"
+            onValueChange={onCategoryChange}
             disabled={isPending && categories.length === 0}
           >
-            <option value="all">Todas las categorías</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id="category-select-trigger"
+              className="w-full rounded-xl border bg-white px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:w-64"
+              aria-label="Filtrar por categoría"
+            >
+              <SelectValue placeholder="Todas las categorías" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.slug} value={c.slug}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </form>
 
-      {/* Indicador de actualización SIN mover el select */}
+      {/* Indicador de actualización SIN mover el layout */}
       <div
         aria-live="polite"
         aria-atomic="true"

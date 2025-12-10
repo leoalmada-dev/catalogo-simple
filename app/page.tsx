@@ -54,10 +54,6 @@ export default async function Home({
 
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Catálogo</h1>
-        <p className="text-sm text-neutral-600">
-          Explorá el catálogo, filtrá por categoría o buscá por texto.
-        </p>
-
         <p
           className="text-xs text-neutral-500"
           aria-live="polite"
