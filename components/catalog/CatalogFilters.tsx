@@ -18,10 +18,13 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
   const qInputRef = useRef<HTMLInputElement>(null);
   const qInputKey = useMemo(() => qFromUrl, [qFromUrl]);
 
+  const hasActiveFilters =
+    qFromUrl.trim().length > 0 || catFromUrl !== "all";
+
   function applyFilters(nextQ?: string, nextCategory?: string) {
     const search = new URLSearchParams();
 
-    // 👇 Usamos el texto tal cual lo escribe la persona (con o sin tilde)
+    // Usamos el texto tal cual lo escribe la persona (con o sin tilde)
     const rawQ = (nextQ ?? qInputRef.current?.value ?? "").trim();
     const effectiveCat = (nextCategory ?? catFromUrl) || "all";
 
@@ -36,7 +39,8 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
     // siempre resetea a la página 1
     search.set("page", "1");
 
-    const url = `${pathname}${search.toString() ? `?${search.toString()}` : ""}`;
+    const url = `${pathname}${search.toString() ? `?${search.toString()}` : ""
+      }`;
     startTransition(() => {
       router.replace(url, { scroll: false });
     });
@@ -48,6 +52,7 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
   }
 
   function onClear() {
+    if (!hasActiveFilters) return;
     if (qInputRef.current) qInputRef.current.value = "";
     startTransition(() => {
       router.replace(pathname, { scroll: false });
@@ -59,13 +64,14 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
   }
 
   return (
-    <div className="space-y-1.5">
+    <section
+      className="space-y-1.5"
+      aria-label="Filtros del catálogo de productos"
+    >
       <form
         onSubmit={onSubmit}
         className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
         role="search"
-        aria-label="Filtros del catálogo de productos"
-        aria-busy={isPending}
       >
         {/* Búsqueda por texto */}
         <div className="flex w-full gap-2">
@@ -92,9 +98,9 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
           <button
             type="button"
             onClick={onClear}
-            className="rounded-xl border bg-white px-4 py-2 text-sm shadow-xs transition hover:bg-neutral-50 disabled:opacity-60"
+            className="rounded-xl border bg-white px-4 py-2 text-sm shadow-xs transition hover:bg-neutral-50 disabled:opacity-40"
             aria-label="Limpiar filtros y volver al catálogo completo"
-            disabled={isPending && !qFromUrl && catFromUrl === "all"}
+            disabled={isPending || !hasActiveFilters}
           >
             Limpiar
           </button>
@@ -126,15 +132,17 @@ export default function CatalogFilters({ categories }: { categories: Cat[] }) {
       </form>
 
       {/* Indicador de actualización SIN mover el select */}
-      {isPending && (
-        <p
-          className="text-xs text-neutral-500"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          Actualizando resultados…
-        </p>
-      )}
-    </div>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="min-h-[1rem]"
+      >
+        {isPending && (
+          <p className="text-xs text-neutral-500">
+            Actualizando resultados…
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
