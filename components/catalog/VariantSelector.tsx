@@ -31,7 +31,6 @@ function formatMoney(cents: number, currency: string) {
       currency,
     }).format(value);
   } catch {
-    // fallback si el currency code es raro
     return `${value.toLocaleString("es-UY")} ${currency}`;
   }
 }
@@ -47,15 +46,14 @@ export default function VariantSelector({
 }: VariantSelectorProps) {
   const hasVariants = variants.length > 0;
 
-  // Si solo hay una variante, la dejamos seleccionada de entrada.
-  // Si hay 0 o más de una, arrancamos sin selección.
+  // Selección inicial
   const [selectedId, setSelectedId] = useState<string | null>(
-    variants.length === 1 ? variants[0]?.id ?? null : null,
+    variants.length === 1 ? variants[0]?.id ?? null : null
   );
 
   const selectedVariant = useMemo(
     () => variants.find((v) => v.id === selectedId) ?? null,
-    [variants, selectedId],
+    [variants, selectedId]
   );
 
   const waHref = buildWaTrackingUrl({
@@ -67,22 +65,12 @@ export default function VariantSelector({
     variantLabel: selectedVariant?.name ?? undefined,
   });
 
-  const showStockInfo =
-    selectedVariant && typeof selectedVariant.stock === "number";
-
-  const stockLabel =
-    !selectedVariant || typeof selectedVariant.stock !== "number"
-      ? null
-      : selectedVariant.stock > 0
-        ? `Stock: ${selectedVariant.stock}`
-        : "Sin stock";
-
-  // En escenarios con variantes, no dejamos consultar hasta que se elija.
   const ctaDisabled = hasVariants && !selectedVariant;
 
   return (
     <section className="space-y-4" aria-label="Opciones de variantes y consulta">
-      {/* listado de variantes */}
+      {/* ===== Variantes ===== */}
+
       <div className="space-y-2">
         <p className="text-sm font-medium text-neutral-700">Variantes</p>
 
@@ -102,6 +90,8 @@ export default function VariantSelector({
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedId(v.id)}
+                    role="radio"
+                    aria-checked={isActive}  // ✔ obligatorio
                     className={[
                       "inline-flex items-center justify-center rounded-full border px-3.5 py-1.5 text-xs sm:text-sm transition",
                       "min-h-[2.25rem] min-w-[2.5rem]",
@@ -110,8 +100,6 @@ export default function VariantSelector({
                         : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-500",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                     ].join(" ")}
-                    aria-pressed={isActive}
-                    role="radio"
                   >
                     {label}
                   </button>
@@ -132,13 +120,9 @@ export default function VariantSelector({
         )}
       </div>
 
-      {/* precio + stock de la variante seleccionada */}
+      {/* ===== Precio + stock ===== */}
       {selectedVariant && (
-        <div
-          className="space-y-1 text-sm"
-          aria-live="polite"
-          aria-atomic="true"
-        >
+        <div className="space-y-1 text-sm" aria-live="polite" aria-atomic="true">
           {showPrices ? (
             <p className="font-medium">
               {formatMoney(selectedVariant.price_cents, currencyCode)}
@@ -149,13 +133,17 @@ export default function VariantSelector({
             </p>
           )}
 
-          {showStockInfo && stockLabel && (
-            <p className="text-xs text-neutral-600">{stockLabel}</p>
+          {typeof selectedVariant.stock === "number" && (
+            <p className="text-xs text-neutral-600">
+              {selectedVariant.stock > 0
+                ? `Stock: ${selectedVariant.stock}`
+                : "Sin stock"}
+            </p>
           )}
         </div>
       )}
 
-      {/* CTA WhatsApp */}
+      {/* ===== CTA WhatsApp ===== */}
       <a
         href={ctaDisabled ? undefined : waHref}
         target="_blank"
@@ -170,13 +158,6 @@ export default function VariantSelector({
           ctaDisabled ? "pointer-events-none opacity-60" : "",
         ].join(" ")}
         aria-disabled={ctaDisabled}
-        aria-label={
-          ctaDisabled
-            ? `Seleccioná una variante para consultar por WhatsApp sobre ${productName}`
-            : selectedVariant
-              ? `Consultar por WhatsApp sobre ${productName} - variante ${selectedVariant.name || selectedVariant.sku}`
-              : `Consultar por WhatsApp sobre ${productName}`
-        }
       >
         {ctaDisabled ? "Seleccioná una variante" : "Consultar por WhatsApp"}
       </a>
