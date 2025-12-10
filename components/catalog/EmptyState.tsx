@@ -1,4 +1,5 @@
-import Link from 'next/link';
+// components/catalog/EmptyState.tsx
+import Link from "next/link";
 
 type Cat = { slug: string; name: string };
 
@@ -13,16 +14,35 @@ export default function EmptyState({
 }) {
   const topCats = categories.slice(0, 6); // muestra algunas categorías como atajos
 
+  // Intentamos mostrar el nombre "lindo" de la categoría si lo tenemos
+  const categoryLabel =
+    category &&
+    categories.find((c) => c.slug === category)?.name;
+
   return (
-    <div className="rounded-2xl border bg-white p-8 text-center">
+    <section
+      className="rounded-2xl border bg-white p-8 text-center"
+      role="status"
+      aria-live="polite"
+    >
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
-        <span className="text-2xl" aria-hidden>🧭</span>
+        <span className="text-2xl" aria-hidden>
+          🧭
+        </span>
       </div>
 
       <h2 className="text-lg font-semibold">No encontramos resultados</h2>
       <p className="mt-1 text-sm text-neutral-600">
-        {q ? <>Probá acotar o cambiar tu búsqueda.</> : <>Probá ajustar los filtros.</>}
-        {category ? `No encontramos productos en “${category}”.` : 'No encontramos productos.'}
+        {q ? (
+          <>Probá acotar o cambiar tu búsqueda.</>
+        ) : (
+          <>Probá ajustar los filtros.</>
+        )}{" "}
+        {category
+          ? categoryLabel
+            ? `Por ahora no hay productos en “${categoryLabel}”.`
+            : `Por ahora no hay productos en esta categoría.`
+          : "No encontramos productos que coincidan."}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -46,7 +66,7 @@ export default function EmptyState({
             Explorar categorías
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
-            {topCats.map(c => (
+            {topCats.map((c) => (
               <Link
                 key={c.slug}
                 href={`/?category=${encodeURIComponent(c.slug)}`}
@@ -58,6 +78,6 @@ export default function EmptyState({
           </div>
         </>
       )}
-    </div>
+    </section>
   );
 }
