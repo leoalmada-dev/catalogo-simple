@@ -29,12 +29,14 @@ export default async function ImagesPage({
           </Link>
           <Link
             href={`/admin/products/${product.id}`}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
-            Volver a editar producto
+            Editar producto
           </Link>
           <Link
             href={`/producto/${product.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-xs text-neutral-600 underline hover:text-neutral-800"
           >
             Ver en catálogo

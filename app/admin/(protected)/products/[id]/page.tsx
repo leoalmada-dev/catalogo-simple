@@ -31,7 +31,7 @@ export default async function EditProductPage({
           </Link>
           <Link
             href={`/admin/products/${product.id}/images`}
-            className="text-xs text-neutral-700 underline hover:text-neutral-900"
+            className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
             Gestionar imágenes
           </Link>
