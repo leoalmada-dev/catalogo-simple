@@ -7,7 +7,7 @@ import { buildWaTrackingUrl } from "@/lib/whatsapp";
 
 type ProductImage = {
     url: string;
-    alt: string;
+    alt: string | null;
 };
 
 type Variant = {
@@ -45,6 +45,14 @@ function formatMoney(cents: number, currency: string) {
     }
 }
 
+// Normaliza para comparar sin tildes y en minúsculas
+function normalize(text: string) {
+    return text
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase();
+}
+
 export default function ProductDetailClient({
     product,
     gallery,
@@ -79,15 +87,13 @@ export default function ProductDetailClient({
         variantLabel: selectedVariant?.name ?? undefined,
     });
 
-    const showStockInfo =
-        selectedVariant && typeof selectedVariant.stock === "number";
-
-    const stockLabel =
-        !selectedVariant || typeof selectedVariant.stock !== "number"
-            ? null
-            : selectedVariant.stock > 0
-                ? `Stock: ${selectedVariant.stock}`
-                : "Sin stock";
+    // 🔧 Nueva lógica de stock:
+    // - No mostramos números
+    // - Solo mostramos "Sin stock" cuando stock <= 0
+    const showOutOfStock =
+        selectedVariant && typeof selectedVariant.stock === "number"
+            ? selectedVariant.stock <= 0
+            : false;
 
     // Si hay variantes pero ninguna seleccionada, deshabilitamos el CTA
     const ctaDisabled = hasVariants && !selectedVariant;
@@ -96,16 +102,24 @@ export default function ProductDetailClient({
     function handleVariantClick(variant: Variant) {
         setSelectedVariantId(variant.id);
 
-        // Al cambiar de variante, intentamos matchear con la imagen cuyo alt contenga el nombre
         if (!hasImages) return;
-        const name = variant.name?.trim();
+
+        const name = variant.name?.trim() || variant.sku?.trim();
         if (!name) return;
 
-        const lowerName = name.toLowerCase();
+        const target = normalize(name);
 
-        const matchIndex = gallery.findIndex((img) =>
-            img.alt.toLowerCase().includes(lowerName),
-        );
+        // Buscamos en TODAS las imágenes (incluida la principal),
+        // matcheando por ALT de forma robusta:
+        // - sin tildes
+        // - minúsculas
+        // - alt puede ser más corto o más largo que el nombre de la variante
+        const matchIndex = gallery.findIndex((img) => {
+            if (!img.alt) return false;
+            const altNorm = normalize(img.alt);
+            if (!altNorm) return false;
+            return altNorm.includes(target) || target.includes(altNorm);
+        });
 
         if (matchIndex >= 0) {
             setActiveImageIndex(matchIndex);
@@ -126,7 +140,7 @@ export default function ProductDetailClient({
                     {activeImage && (
                         <Image
                             src={activeImage.url}
-                            alt={activeImage.alt}
+                            alt={activeImage.alt || product.name}
                             fill
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
@@ -161,7 +175,7 @@ export default function ProductDetailClient({
                                     >
                                         <Image
                                             src={img.url}
-                                            alt={img.alt}
+                                            alt={img.alt || product.name}
                                             fill
                                             className="object-cover"
                                             sizes="25vw"
@@ -262,8 +276,8 @@ export default function ProductDetailClient({
                                 </p>
                             )}
 
-                            {showStockInfo && stockLabel && (
-                                <p className="text-xs text-neutral-600">{stockLabel}</p>
+                            {showOutOfStock && (
+                                <p className="text-xs text-red-600">Sin stock</p>
                             )}
                         </div>
                     )}
@@ -289,7 +303,8 @@ export default function ProductDetailClient({
                         ctaDisabled
                             ? `Seleccioná una variante para consultar por WhatsApp sobre ${product.name}`
                             : selectedVariant
-                                ? `Consultar por WhatsApp sobre ${product.name} - variante ${selectedVariant.name || selectedVariant.sku}`
+                                ? `Consultar por WhatsApp sobre ${product.name} - variante ${selectedVariant.name || selectedVariant.sku
+                                }`
                                 : `Consultar por WhatsApp sobre ${product.name}`
                     }
                 >
