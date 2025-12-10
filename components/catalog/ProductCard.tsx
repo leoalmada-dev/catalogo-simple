@@ -1,3 +1,4 @@
+// components/catalog/ProductCard.tsx
 import Link from "next/link";
 import type { ProductPublic } from "@/lib/data/catalog";
 import { toPublicStorageUrl } from "@/lib/images";
@@ -22,13 +23,11 @@ export default function ProductCard({ product }: Props) {
         : null;
 
     return (
-        <article
-            className="group block rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md focus-within:shadow-md"
-        >
+        <article className="group block rounded-2xl border bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.02)] transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-sm focus-within:shadow-sm">
             <Link
                 href={href}
                 aria-label={`Ver detalle de ${product.name}`}
-                className="flex h-full flex-col rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+                className="flex h-full flex-col rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             >
                 <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl bg-neutral-50">
                     {imgUrl ? (
@@ -37,7 +36,7 @@ export default function ProductCard({ product }: Props) {
                             alt={product.name}
                             fill
                             sizes="(max-width:768px) 50vw, 25vw"
-                            className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                            className="object-cover transition-transform duration-200 group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
                         />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">
@@ -59,8 +58,11 @@ export default function ProductCard({ product }: Props) {
                             <span className="font-medium">{formattedPrice}</span>
                         </p>
                     ) : (
-                        <p className="mt-1 text-xs text-neutral-500">Consultar precio</p>
-                    )}
+                        <p className="mt-1 text-xs text-neutral-500">
+                            Consultar precio
+                        </p>
+                    )
+                    }
                 </div>
             </Link>
         </article>
