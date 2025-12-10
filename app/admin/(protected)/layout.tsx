@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import AdminUserBar from "@/components/admin/AdminUserBar";
 
 export default async function ProtectedAdminLayout({
   children,
@@ -17,12 +18,13 @@ export default async function ProtectedAdminLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/admin"
-            className="text-sm font-medium text-neutral-800 hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
+            className="rounded text-sm font-medium text-neutral-800 hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             aria-label="Ir al listado principal del panel de administración"
           >
             Panel de administración
           </Link>
-          <div className="text-xs text-neutral-600">{user.email}</div>
+
+          <AdminUserBar email={user.email ?? null} />
         </div>
       </header>
 

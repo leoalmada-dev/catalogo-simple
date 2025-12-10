@@ -33,35 +33,35 @@ export default function PaginationControls({
   return (
     <nav
       className="mt-2 flex items-center justify-between gap-3"
-      aria-label="Paginación de resultados"
-      aria-busy={isPending}
+      role="navigation"
+      aria-label="Paginación del catálogo"
     >
       <button
         type="button"
         onClick={() => go(page - 1)}
         disabled={!canPrev || isPending}
         aria-disabled={!canPrev || isPending}
-        className="rounded-xl border bg-white px-3 py-2 text-sm transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
         aria-label="Página anterior"
       >
         ← Anterior
       </button>
 
-      <p
+      <span
         className="text-xs text-neutral-600"
         aria-live="polite"
         aria-atomic="true"
       >
         Página <strong>{page}</strong> de{" "}
         <strong>{Math.max(totalPages, 1)}</strong>
-      </p>
+      </span>
 
       <button
         type="button"
         onClick={() => go(page + 1)}
         disabled={!canNext || isPending}
         aria-disabled={!canNext || isPending}
-        className="rounded-xl border bg-white px-3 py-2 text-sm transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl border bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-neutral-50"
         aria-label="Página siguiente"
       >
         Siguiente →

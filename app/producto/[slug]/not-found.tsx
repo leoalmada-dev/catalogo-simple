@@ -1,4 +1,5 @@
-import Link from 'next/link';
+// app/producto/[slug]/not-found.tsx
+import Link from "next/link";
 
 export default function NotFound() {
   return (
@@ -23,7 +24,7 @@ export default function NotFound() {
           href="/?category=all"
           className="rounded-xl bg-black px-4 py-2 text-sm text-white hover:opacity-90"
         >
-          Ver todos los productos
+          Ver todo el catálogo
         </Link>
       </div>
     </div>

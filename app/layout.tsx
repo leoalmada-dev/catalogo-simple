@@ -2,12 +2,14 @@
 import "./globals.css";
 import { ReactNode } from "react";
 import SiteHeader from "@/components/site-header";
+import SiteFooter from "@/components/site-footer";
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/env";
 import UtmCapture from "@/components/analytics/UtmCapture";
 
 const SITE_NAME = "Pantera mini mayorista";
 const SITE_DESCRIPTION = "Catálogo de Pantera mini mayorista 🐆";
+const AUTHOR_NAME = "Leonardo Almada";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -24,6 +26,8 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   alternates: { canonical: "/" },
+  authors: [{ name: AUTHOR_NAME }],
+  creator: AUTHOR_NAME,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -43,8 +47,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           name="google-site-verification"
           content="CVZVmQ9X7PPfJNzLy3ie6pYh6Tp9ep-pregpk-gu4f4"
         />
+        <meta name="author" content={AUTHOR_NAME} />
 
-        {/* JSON-LD global */}
+        {/* JSON-LD */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
@@ -69,6 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
 
+        <SiteFooter />
         <UtmCapture />
       </body>
     </html>
