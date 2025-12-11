@@ -220,7 +220,7 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
         }
     }
 
-    // Query a la vista pública
+    // Query a la vista pública (sin preocuparnos por primary_image todavía)
     let sel = supabase
         .from('catalogo_v_products_public')
         .select('*', { count: 'exact' })
@@ -238,8 +238,42 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
     const { data, error, count } = await sel;
     if (error) throw error;
 
+    const items = (data ?? []) as ProductPublic[];
+
+    // 🔎 Fallback: si la vista no está rellenando primary_image,
+    // la resolvemos desde catalogo_images tomando la principal por producto.
+    const productIds = items.map((p) => p.id);
+    if (productIds.length) {
+        const { data: imgRows, error: imgErr } = await supabase
+            .from('catalogo_images')
+            .select('product_id, path, is_primary, position')
+            .in('product_id', productIds)
+            .order('is_primary', { ascending: false })
+            .order('position', { ascending: true });
+
+        if (imgErr) throw imgErr;
+
+        const primaryByProduct: Record<string, string> = {};
+        for (const row of imgRows ?? []) {
+            const r = row as {
+                product_id: string;
+                path: string;
+                is_primary: boolean | null;
+                position: number | null;
+            };
+            if (!primaryByProduct[r.product_id]) {
+                primaryByProduct[r.product_id] = r.path;
+            }
+        }
+
+        // Mutamos el array en memoria para que ProductCard pueda usar primary_image
+        for (const item of items) {
+            item.primary_image = primaryByProduct[item.id] ?? item.primary_image ?? null;
+        }
+    }
+
     return {
-        items: (data ?? []) as ProductPublic[],
+        items,
         total: count ?? 0,
         page,
         perPage,
