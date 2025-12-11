@@ -1,8 +1,11 @@
 // app/admin/(protected)/products/new/page.tsx
 import Link from "next/link";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { listCategoriesForAdmin } from "@/app/admin/server-actions";
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const categories = await listCategoriesForAdmin();
+
   return (
     <div className="max-w-3xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -15,7 +18,7 @@ export default function NewProductPage() {
         </Link>
       </div>
 
-      <ProductForm mode="create" />
+      <ProductForm mode="create" allCategories={categories} />
     </div>
   );
 }

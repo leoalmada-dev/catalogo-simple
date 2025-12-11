@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/components/admin/ProductForm";
-import { getProductById } from "@/app/admin/server-actions";
+import { getProductById, listCategoriesForAdmin } from "@/app/admin/server-actions";
 
 export default async function EditProductPage({
   params,
@@ -10,7 +10,12 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await getProductById(id);
+
+  const [product, categories] = await Promise.all([
+    getProductById(id),
+    listCategoriesForAdmin(),
+  ]);
+
   if (!product) return notFound();
 
   return (
@@ -38,7 +43,7 @@ export default async function EditProductPage({
         </div>
       </div>
 
-      <ProductForm mode="edit" initial={product} />
+      <ProductForm mode="edit" initial={product} allCategories={categories} />
     </div>
   );
 }

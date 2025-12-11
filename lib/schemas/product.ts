@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // status de productos según enum catalogo_product_status
-export const productStatus = z.enum(["draft","published","archived"]);
+export const productStatus = z.enum(["draft", "published", "archived"]);
 
 export const variantSchema = z.object({
   sku: z.string().min(1, "SKU requerido"),
@@ -19,6 +19,7 @@ export const productSchema = z.object({
   slug: z.string().min(1),
   description: z.string().optional().nullable(),
   status: productStatus.default("draft"),
+  categories: z.array(z.string()).optional().default([]),
   variants: z.array(variantSchema).default([]),
 });
 
