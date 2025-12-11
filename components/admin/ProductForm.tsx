@@ -23,12 +23,20 @@ import {
   type ProductFormData,
 } from "@/lib/schemas/product";
 
+type CategoryOption = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
 export function ProductForm({
   mode,
   initial,
+  allCategories,
 }: {
   mode: "create" | "edit";
-  initial?: Partial<ProductFormData> & { id?: string };
+  initial?: Partial<ProductFormData> & { id?: string; categories?: string[] };
+  allCategories: CategoryOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -48,6 +56,8 @@ export function ProductForm({
       slug: initial?.slug ?? "",
       description: initial?.description ?? null,
       status: (initial?.status as ProductFormData["status"]) ?? "draft",
+      // 👇 categorías iniciales (slugs)
+      categories: initial?.categories ?? [],
       variants: initial?.variants ?? [],
     },
   });
@@ -74,6 +84,7 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Datos básicos */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">
@@ -119,8 +130,42 @@ export function ProductForm({
             <option value="archived">Archivado</option>
           </select>
         </div>
+
+        {/* Categorías */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Categorías
+          </label>
+          {allCategories.length === 0 ? (
+            <p className="text-xs text-neutral-500">
+              No hay categorías definidas aún en el catálogo.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map((cat) => (
+                <label
+                  key={cat.id}
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-neutral-800"
+                >
+                  <input
+                    type="checkbox"
+                    value={cat.slug}
+                    {...register("categories")}
+                  />
+                  <span>{cat.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          {errors.categories && (
+            <p className="mt-1 text-xs text-red-600">
+              {String(errors.categories.message)}
+            </p>
+          )}
+        </div>
       </div>
 
+      {/* Variantes */}
       <fieldset className="space-y-3 rounded border p-3">
         <legend className="px-1 text-sm font-medium">Variantes</legend>
 
@@ -155,9 +200,7 @@ export function ProductForm({
             <label className="inline-flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
-                {...register(
-                  `variants.${idx}.is_available` as const,
-                )}
+                {...register(`variants.${idx}.is_available` as const)}
                 defaultChecked
               />
               Disponible
@@ -190,6 +233,7 @@ export function ProductForm({
         </Button>
       </fieldset>
 
+      {/* Acciones */}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending}>
           {mode === "create" ? "Crear" : "Guardar"}

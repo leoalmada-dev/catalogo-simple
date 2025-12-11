@@ -52,6 +52,13 @@ type CatalogConfigDB = {
   updated_at: string | null;
 };
 
+// arriba, con el resto de tipos
+type CategoryDB = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
 /* =========================
    Helpers
    ========================= */
@@ -129,8 +136,31 @@ export async function getProductById(id: string) {
       data: VariantDB[] | null;
     };
 
+  // 👇 NUEVO: categorías vinculadas a este producto
+  const { data: pivots } = (await supabase
+    .from("catalogo_product_categories")
+    .select("category_id")
+    .eq("product_id", id)) as unknown as {
+      data: { category_id: string }[] | null;
+    };
+
+  const categoryIds = (pivots ?? []).map((p) => p.category_id);
+  let categorySlugs: string[] = [];
+
+  if (categoryIds.length) {
+    const { data: cats } = (await supabase
+      .from("catalogo_categories")
+      .select("id, slug")
+      .in("id", categoryIds)) as unknown as {
+        data: CategoryDB[] | null;
+      };
+
+    categorySlugs = (cats ?? []).map((c) => c.slug);
+  }
+
   return {
     ...p,
+    categories: categorySlugs, // 👈 lo usamos en el form
     variants: (variants ?? []).map((v) => ({
       sku: v.sku ?? "",
       name: v.name ?? null,
@@ -163,6 +193,7 @@ export async function createProduct(data: ProductFormData) {
 
   if (error) throw error;
 
+  // Variantes (como ya tenías)
   if (parsed.variants?.length) {
     const rows = parsed.variants.map((v) => ({
       product_id: inserted.id,
@@ -175,6 +206,29 @@ export async function createProduct(data: ProductFormData) {
     }));
     const { error: vErr } = await supabase.from(T_VARIANTS).insert(rows);
     if (vErr) throw vErr;
+  }
+
+  // 👇 NUEVO: categorías
+  if (parsed.categories && parsed.categories.length) {
+    const { data: cats } = (await supabase
+      .from("catalogo_categories")
+      .select("id, slug")
+      .in("slug", parsed.categories)) as unknown as {
+        data: CategoryDB[] | null;
+      };
+
+    const rows =
+      cats?.map((c) => ({
+        product_id: inserted.id,
+        category_id: c.id,
+      })) ?? [];
+
+    if (rows.length) {
+      const { error: cErr } = await supabase
+        .from("catalogo_product_categories")
+        .insert(rows);
+      if (cErr) throw cErr;
+    }
   }
 
   revalidatePath("/admin");
@@ -202,6 +256,7 @@ export async function updateProduct({
     .eq("id", id);
   if (error) throw error;
 
+  // Variantes (como ya tenías)
   await supabase.from(T_VARIANTS).delete().eq("product_id", id);
   if (parsed.variants?.length) {
     const rows = parsed.variants.map((v) => ({
@@ -215,6 +270,36 @@ export async function updateProduct({
     }));
     const { error: vErr } = await supabase.from(T_VARIANTS).insert(rows);
     if (vErr) throw vErr;
+  }
+
+  // 👇 NUEVO: categorías
+  // 1) limpiar las actuales
+  await supabase
+    .from("catalogo_product_categories")
+    .delete()
+    .eq("product_id", id);
+
+  // 2) insertar las nuevas (si hay)
+  if (parsed.categories && parsed.categories.length) {
+    const { data: cats } = (await supabase
+      .from("catalogo_categories")
+      .select("id, slug")
+      .in("slug", parsed.categories)) as unknown as {
+        data: CategoryDB[] | null;
+      };
+
+    const rows =
+      cats?.map((c) => ({
+        product_id: id,
+        category_id: c.id,
+      })) ?? [];
+
+    if (rows.length) {
+      const { error: cErr } = await supabase
+        .from("catalogo_product_categories")
+        .insert(rows);
+      if (cErr) throw cErr;
+    }
   }
 
   revalidatePath(`/admin/products/${id}`);
@@ -570,4 +655,28 @@ export async function updateCatalogConfigShowPrices(show: boolean) {
 
   revalidatePath("/admin");
   revalidatePath("/");
+}
+
+// =========================
+// CATEGORÍAS (admin)
+// =========================
+
+export async function listCategoriesForAdmin() {
+  await requireAdmin();
+  const supabase = await createServerClient();
+
+  const { data, error } = (await supabase
+    .from("catalogo_categories")
+    .select("id, slug, name")
+    .order("name", { ascending: true })) as unknown as {
+      data: CategoryDB[] | null;
+      error: unknown;
+    };
+
+  if (error) {
+    // fallback seguro: sin categorías
+    return [] as CategoryDB[];
+  }
+
+  return data ?? [];
 }
