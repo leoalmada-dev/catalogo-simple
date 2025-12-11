@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
+import type { Metadata } from 'next';
 import {
   getCategories,
   ProductPublic,
@@ -13,6 +14,21 @@ import ProductCard from "@/components/catalog/ProductCard";
 import PaginationControls from "@/components/catalog/PaginationControls";
 import EmptyState from "@/components/catalog/EmptyState";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+
+export const metadata: Metadata = {
+  title: 'Pantera Mini Mayorista – Productos de higiene y limpieza',
+  description:
+    'Pantera Mini Mayorista: catálogo online de productos de higiene y limpieza para comprar por mayor. Pedí tus productos y coordiná por WhatsApp.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Pantera Mini Mayorista – Productos de higiene y limpieza',
+    description:
+      'Catálogo online Pantera Mini Mayorista. Encontrá productos de limpieza e higiene, y pedí por mayor coordinando por WhatsApp.',
+    url: '/',
+  },
+};
 
 type SParams = Promise<{
   q?: string | string[];

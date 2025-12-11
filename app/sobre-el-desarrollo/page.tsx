@@ -6,7 +6,7 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 export const metadata: Metadata = {
     title: "Sobre el desarrollo y el autor",
     description:
-        "Resumen técnico y profesional del desarrollo del catálogo Pantera mini mayorista, a cargo de Leonardo Almada.",
+        "Resumen profesional del desarrollo del catálogo Pantera mini mayorista, a cargo de Leonardo Almada.",
 };
 
 export default function SobreElDesarrolloPage() {
@@ -19,180 +19,197 @@ export default function SobreElDesarrolloPage() {
                 ]}
             />
 
+            {/* Intro */}
             <header className="space-y-2">
-                <h1 className="text-2xl font-semibold">
-                    Sobre el desarrollo y el autor
-                </h1>
+                <h1 className="text-2xl font-semibold">Sobre el desarrollo y el autor</h1>
                 <p className="text-sm text-neutral-600">
                     Este catálogo fue diseñado y desarrollado por{" "}
-                    <span className="font-medium text-neutral-800">
-                        Leonardo Almada
-                    </span>{" "}
-                    como un proyecto profesional de frontend con foco en UX, accesibilidad
-                    y buenas prácticas de desarrollo.
+                    <span className="font-medium text-neutral-800">Leonardo Almada</span>, como
+                    un proyecto profesional orientado a negocios mayoristas, con foco en UX,
+                    confiabilidad y una base técnica preparada para crecer.
                 </p>
             </header>
 
+            {/* Rol y enfoque */}
             <section className="space-y-3">
                 <h2 className="text-lg font-semibold">Rol y enfoque</h2>
                 <p className="text-sm text-neutral-700">
-                    En este proyecto trabajé como desarrollador frontend con foco en:
+                    En este proyecto asumí el rol de desarrollador frontend con responsabilidad
+                    sobre la experiencia completa del catálogo: desde la navegación pública hasta
+                    el panel de administración. El objetivo no fue solo “que funcione”, sino
+                    construir algo que transmita orden, cuidado y criterio profesional.
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
-                    <li>Experiencia de usuario (UX) aplicada a catálogo y admin.</li>
-                    <li>Accesibilidad AA básica: foco visible, estructura semántica, ALT y aria.</li>
-                    <li>Calidad de código: TypeScript estricto, componentes reutilizables.</li>
+                    <li>Diseño de la experiencia de catálogo pensando en el usuario final.</li>
+                    <li>Construcción de un panel de administración simple pero potente.</li>
+                    <li>Código tipado con TypeScript y componentes reutilizables.</li>
                     <li>
-                        Flujo de trabajo profesional: ramas por feature, commits pequeños y
-                        CI/CD automatizado.
+                        Flujo de trabajo similar al de un entorno de producción real
+                        (versionado, pruebas y despliegue continuo).
                     </li>
                 </ul>
             </section>
 
+            {/* Stack técnico (alto nivel) */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Stack técnico</h2>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
-                    <li>Next.js (App Router) con React y TypeScript.</li>
-                    <li>Tailwind CSS (escala de 8pt) + componentes UI basados en shadcn/ui.</li>
-                    <li>Supabase (PostgreSQL) para catálogo, variantes, imágenes y admin.</li>
-                    <li>Rutas protegidas para admin usando autenticación con Supabase.</li>
-                    <li>Vercel como plataforma de despliegue.</li>
-                </ul>
-            </section>
-
-            <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Flujo de trabajo y versiones</h2>
+                <h2 className="text-lg font-semibold">Tecnología utilizada</h2>
                 <p className="text-sm text-neutral-700">
-                    El proyecto se trabajó con un flujo de ramas y versiones pensado para
-                    escalar en el tiempo:
+                    La elección de tecnologías apunta a un stack moderno y estándar en la
+                    industria, para que el proyecto sea mantenible y fácil de extender:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
-                    <li>Ramas de feature dedicadas (por ejemplo, <code>feature/cat-07-uiux</code>).</li>
                     <li>
-                        Commits atómicos y descriptivos, siguiendo prefijos como{" "}
-                        <code>feat(ui):</code>, <code>fix(a11y):</code>,{" "}
-                        <code>refactor:</code>, <code>style:</code>, etc.
+                        <span className="font-medium">Next.js + React:</span> aplicación con App
+                        Router, rutas públicas y privadas, y enfoque en rendimiento.
                     </li>
-                    <li>Separación clara entre catálogo público y panel de administración.</li>
                     <li>
-                        Ajustes iterativos guiados por criterios de aceptación (DoD) por
-                        hilo/version.
+                        <span className="font-medium">TypeScript:</span> tipado estático para
+                        reducir errores y documentar mejor la intención del código.
+                    </li>
+                    <li>
+                        <span className="font-medium">Tailwind CSS:</span> diseño limpio,
+                        consistente, y adaptable a mobile/escritorio.
+                    </li>
+                    <li>
+                        <span className="font-medium">Supabase (PostgreSQL):</span> base de datos,
+                        autenticación y almacenamiento de imágenes integrados.
+                    </li>
+                    <li>
+                        <span className="font-medium">Vercel:</span> plataforma de despliegue
+                        orientada a proyectos frontend modernos.
                     </li>
                 </ul>
             </section>
 
+            {/* Flujo de trabajo y calidad */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Calidad, tests y CI/CD</h2>
+                <h2 className="text-lg font-semibold">Calidad y flujo de trabajo</h2>
                 <p className="text-sm text-neutral-700">
-                    Antes de desplegar, cada cambio pasa por una serie de verificaciones
-                    automáticas:
+                    El proyecto se trabajó con una mentalidad de producto real, no como un
+                    experimento rápido. Cada cambio pasa por una serie de chequeos antes de
+                    llegar a producción:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
                     <li>
-                        <span className="font-medium">Linting:</span>{" "}
-                        <code>npm run lint</code> (ESLint + reglas para React, hooks y
-                        TypeScript).
+                        Validaciones automáticas de código (linting, tipos y build de producción).
                     </li>
                     <li>
-                        <span className="font-medium">Type checking:</span>{" "}
-                        <code>npm run typecheck</code> para asegurar tipos estrictos.
+                        Tests automatizados para funciones clave y utilidades (por ejemplo, tracking
+                        de WhatsApp).
                     </li>
                     <li>
-                        <span className="font-medium">Tests:</span>{" "}
-                        <code>npm run test:ci</code> con Vitest y cobertura.
+                        Integración continua: el despliegue sólo ocurre si todo está en verde.
                     </li>
                     <li>
-                        <span className="font-medium">Build de producción:</span>{" "}
-                        <code>npm run build</code> para validar que la app se empaqueta sin
-                        errores.
-                    </li>
-                    <li>
-                        Pipeline de CI en GitHub Actions que solo despliega a Vercel si
-                        todos estos pasos pasan en verde.
+                        Uso de Git y ramas por funcionalidad, con commits pequeños y descriptivos.
                     </li>
                 </ul>
+                <p className="text-sm text-neutral-700">
+                    La idea es que el catálogo se pueda seguir manteniendo con confianza a medida
+                    que el negocio crezca o cambien los requisitos.
+                </p>
             </section>
 
+            {/* UX, accesibilidad y SEO */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold">
-                    UX, accesibilidad y SEO en el catálogo
-                </h2>
+                <h2 className="text-lg font-semibold">Experiencia de uso y SEO</h2>
+                <p className="text-sm text-neutral-700">
+                    Más allá de lo técnico, el foco principal es que la persona que usa el
+                    catálogo pueda encontrar y consultar productos sin fricción:
+                </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
                     <li>
-                        <span className="font-medium">Accesibilidad:</span> skip link al
-                        contenido, un <code>h1</code> por página, foco visible, estados
-                        vacíos y de error claros, ALT significativos en imágenes.
+                        Filtros por categoría y búsqueda por texto conectados a la URL, para poder
+                        compartir resultados fácilmente.
                     </li>
                     <li>
-                        <span className="font-medium">UX en catálogo:</span> filtros
-                        persistentes por URL, búsqueda tolerante a tildes, paginación
-                        accesible, skeletons de carga y mensajes de “sin resultados”.
+                        Página de producto con galería de imágenes, variantes, y botón directo de
+                        consulta por WhatsApp.
                     </li>
                     <li>
-                        <span className="font-medium">UX en producto:</span> selector de
-                        variantes vinculado a imágenes, CTA de WhatsApp contextual, precios
-                        y stock visibles cuando aplica.
+                        Estados vacíos y páginas de error pensados para guiar al usuario en lugar de
+                        “dejarlos tirados”.
                     </li>
                     <li>
-                        <span className="font-medium">SEO técnico:</span> metadatos por
-                        página, Open Graph, JSON-LD para organización y productos, sitemap y
-                        robots configurados, verificación con Google Search Console.
+                        Metadatos, Open Graph y sitemap configurados para que el catálogo se indexe
+                        correctamente en buscadores.
                     </li>
                 </ul>
             </section>
 
+            {/* Visibilidad de precios (explicación elegante) */}
+            <section className="space-y-3">
+                <h2 className="text-lg font-semibold">Gestión flexible de precios</h2>
+                <p className="text-sm text-neutral-700">
+                    Una parte importante del proyecto fue diseñar cómo se muestran los precios
+                    hacia el cliente. El catálogo está preparado para adaptarse a distintas
+                    estrategias comerciales, sin tener que tocar el código cada vez.
+                </p>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
+                    <li>
+                        Un control global permite encender o apagar la visibilidad de precios en
+                        todo el sitio.
+                    </li>
+                    <li>
+                        Cada producto puede comportarse como una excepción, mostrando u ocultando
+                        precios según la necesidad del negocio.
+                    </li>
+                    <li>
+                        El panel de administración incluye un mini panel para ajustar este
+                        comportamiento de forma segura y rápida.
+                    </li>
+                </ul>
+                <p className="text-sm text-neutral-700">
+                    Esto refleja una forma de trabajar donde la lógica del negocio está pensada
+                    para el largo plazo, contemplando cambios de estrategia sin rediseñar el
+                    sistema completo.
+                </p>
+            </section>
+
+            {/* Panel de administración */}
             <section className="space-y-3">
                 <h2 className="text-lg font-semibold">Panel de administración</h2>
                 <p className="text-sm text-neutral-700">
-                    El admin permite gestionar el catálogo de manera eficiente:
+                    El panel interno está diseñado para que la gestión diaria del catálogo no
+                    dependa de un desarrollador:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
+                    <li>Creación y edición de productos con variantes y estados.</li>
                     <li>
-                        Login protegido con Supabase y layout específico para administración.
+                        Importación y exportación de productos vía CSV, para actualizar el catálogo
+                        en bloque.
+                    </li>
+                    <li>Gestión de imágenes: subida múltiple, imagen principal y texto ALT.</li>
+                    <li>
+                        Control rápido del estado de cada producto (borrador, publicado,
+                        archivado).
                     </li>
                     <li>
-                        Edición de productos con variantes, estado (borrador/publicado/archivado) y
-                        validación con Zod.
-                    </li>
-                    <li>
-                        Importación y exportación de productos vía CSV, con feedback
-                        detallado.
-                    </li>
-                    <li>
-                        Gestor de imágenes con subida múltiple, selección de imagen
-                        principal, ALT editable y asociación opcional a variantes.
-                    </li>
-                    <li>
-                        Actualización de estado con UI optimista, transiciones y toasts de
-                        éxito/error.
+                        Configuración global de visibilidad de precios accesible desde el mismo
+                        panel.
                     </li>
                 </ul>
             </section>
 
+            {/* Contacto */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Seguimiento y analítica</h2>
+                <h2 className="text-lg font-semibold">Sobre mí y contacto</h2>
                 <p className="text-sm text-neutral-700">
-                    El catálogo está preparado para entender mejor el origen de las
-                    consultas:
+                    Soy <span className="font-medium text-neutral-900">Leonardo Almada</span>,
+                    desarrollador frontend. Me interesa construir productos que combinen:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
-                    <li>Captura de parámetros UTM en la URL y almacenamiento temporal.</li>
-                    <li>
-                        Generación de enlaces de WhatsApp con tracking (<code>/w</code>) que
-                        incluyen producto, variante, origen y otros datos relevantes.
-                    </li>
-                    <li>
-                        Diseño pensado para conectar fácilmente con herramientas de
-                        analítica en el futuro.
-                    </li>
+                    <li>Experiencias claras y simples para el usuario final.</li>
+                    <li>Código prolijo, legible y fácil de mantener.</li>
+                    <li>Procesos de trabajo que se parezcan a un entorno profesional real.</li>
                 </ul>
-            </section>
-
-            <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Contacto</h2>
                 <p className="text-sm text-neutral-700">
-                    Si te interesa este tipo de trabajo o querés hablar sobre nuevos
-                    proyectos, podés escribirme a:
+                    Este catálogo es uno de los primeros pasos de un camino en el que quiero
+                    seguir creando soluciones a medida para negocios reales.
+                </p>
+                <p className="text-sm font-medium text-neutral-900">
+                    Si querés hablar sobre proyectos o colaborar en algo similar, podés
+                    contactarme en:
                 </p>
                 <p className="text-sm font-medium text-neutral-900">
                     <a
@@ -203,8 +220,8 @@ export default function SobreElDesarrolloPage() {
                     </a>
                 </p>
                 <p className="text-xs text-neutral-500">
-                    En el futuro voy a centralizar mis proyectos y experiencia en una
-                    página personal. Este catálogo es el primer paso de ese camino.
+                    Más adelante voy a centralizar mis proyectos en un portfolio personal. Este
+                    sitio es el inicio de ese camino.
                 </p>
             </section>
 

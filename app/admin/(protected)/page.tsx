@@ -1,8 +1,9 @@
 // app/admin/(protected)/page.tsx
 import Link from "next/link";
-import { listProducts } from "@/app/admin/server-actions";
+import { listProducts, getCatalogConfigForAdmin } from "@/app/admin/server-actions";
 import { ImportCSVForm, ExportCSVButton } from "@/components/admin/CSVTools";
 import StatusToggle from "@/components/admin/StatusToggle";
+import CatalogConfigToggle from "@/components/admin/CatalogConfigToggle";
 
 type AdminListRow = {
   id: string;
@@ -17,7 +18,15 @@ type AdminListRow = {
 };
 
 export default async function AdminHome() {
-  const { rows } = await listProducts();
+  const [{ rows }, config] = await Promise.all([
+    listProducts(),
+    getCatalogConfigForAdmin(),
+  ]);
+
+  const lastUpdatedLabel =
+    config.updated_at != null
+      ? new Date(config.updated_at).toLocaleString()
+      : null;
 
   return (
     <div className="space-y-4">
@@ -34,6 +43,13 @@ export default async function AdminHome() {
         </div>
       </div>
 
+      {/* Config global de catálogo */}
+      <CatalogConfigToggle
+        initialShowPrices={Boolean(config.show_prices)}
+        lastUpdatedLabel={lastUpdatedLabel}
+      />
+
+      {/* Tabla de productos */}
       <div className="overflow-x-auto rounded border bg-white">
         <table className="min-w-full text-sm">
           <caption className="sr-only">

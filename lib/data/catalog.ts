@@ -2,16 +2,26 @@
 import { createServerClient } from '@/lib/supabase/server';
 
 // ---- Tipos públicos (según view y tablas) ----
+
 export type ProductPublic = {
     id: string;
     slug: string;
     name: string;
     description: string | null;
-    effective_show_prices: boolean;
-    min_price_visible: number | null;
-    primary_image: string | null;
+    // en la vista sólo debería haber publicados, pero tipamos por si acaso
+    status?: string;
     created_at: string;
-    updated_at: string;
+    updated_at: string | null;
+
+    primary_image: string | null;
+
+    show_prices_override: boolean;
+    show_prices: boolean;
+    effective_show_prices: boolean;
+
+    min_price_cents: number | null;
+    variants_count: number;
+    has_available_variants: boolean;
 };
 
 export type ImageRow = {
@@ -44,7 +54,6 @@ export type CatalogConfig = {
 
 export type CategoryLite = { slug: string; name: string };
 
-// tipo liviano para sitemap
 export type ProductSlugInfo = {
     slug: string;
     updated_at: string | null;
@@ -59,17 +68,21 @@ export class NotFoundError extends Error {
     }
 }
 export function isNotFound(e: unknown): e is NotFoundError {
-    return e instanceof NotFoundError || (typeof e === 'object' && e !== null && (e as { code?: string }).code === 'NOT_FOUND');
+    return (
+        e instanceof NotFoundError ||
+        (typeof e === 'object' &&
+            e !== null &&
+            (e as { code?: string }).code === 'NOT_FOUND')
+    );
 }
 
 // ---- Funciones base ----
+
 export async function getProductBySlug(slug: string): Promise<ProductPublic> {
     const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('catalogo_v_products_public')
-        .select(
-            'id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at'
-        )
+        .select('*')
         .eq('slug', slug)
         .maybeSingle();
 
@@ -91,11 +104,15 @@ export async function getProductImages(productId: string): Promise<ImageRow[]> {
     return (data ?? []) as ImageRow[];
 }
 
-export async function getProductVariants(productId: string): Promise<VariantRow[]> {
+export async function getProductVariants(
+    productId: string,
+): Promise<VariantRow[]> {
     const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('catalogo_variants')
-        .select('id, product_id, sku, name, price_cents, is_available, stock, attributes')
+        .select(
+            'id, product_id, sku, name, price_cents, is_available, stock, attributes',
+        )
         .eq('product_id', productId)
         .order('price_cents', { ascending: true })
         .order('name', { ascending: true });
@@ -146,7 +163,7 @@ export async function getVariantPrimaryImageMap(variantIds: string[]) {
     return map;
 }
 
-// ---- NUEVOS: categorías + búsqueda paginada ----
+// ---- categorías + búsqueda paginada ----
 export async function getCategories(): Promise<CategoryLite[]> {
     const supabase = await createServerClient();
     const { data, error } = await supabase
@@ -160,8 +177,8 @@ export async function getCategories(): Promise<CategoryLite[]> {
 export type SearchArgs = {
     q?: string;
     category?: string; // slug o 'all'
-    page?: number;     // 1-based
-    perPage?: number;  // default 12
+    page?: number; // 1-based
+    perPage?: number; // default 12
 };
 export type SearchResult = {
     items: ProductPublic[];
@@ -171,8 +188,8 @@ export type SearchResult = {
 };
 
 export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
-    const rawQ = (args.q ?? "").trim();
-    const category = (args.category ?? "all").trim();
+    const q = (args.q ?? '').trim();
+    const category = (args.category ?? 'all').trim();
     const perPage = Math.max(1, Math.min(args.perPage ?? 12, 60));
     const page = Math.max(1, Math.floor(args.page ?? 1));
     const from = (page - 1) * perPage;
@@ -182,21 +199,20 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
 
     // Si hay categoría, resolver IDs de productos mediante pivote
     let productIdsFilter: string[] | null = null;
-    if (category && category !== "all") {
+    if (category && category !== 'all') {
         const { data: cat } = await supabase
-            .from("catalogo_categories")
-            .select("id")
-            .eq("slug", category)
+            .from('catalogo_categories')
+            .select('id')
+            .eq('slug', category)
             .maybeSingle();
 
         if (!cat) {
             return { items: [], total: 0, page, perPage };
         }
-
         const { data: piv } = await supabase
-            .from("catalogo_product_categories")
-            .select("product_id")
-            .eq("category_id", cat.id);
+            .from('catalogo_product_categories')
+            .select('product_id')
+            .eq('category_id', cat.id);
 
         productIdsFilter = (piv ?? []).map((r) => r.product_id as string);
         if (productIdsFilter.length === 0) {
@@ -204,27 +220,17 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
         }
     }
 
-    // ⚠️ Usamos la vista nueva con columna normalizada
+    // Query a la vista pública (sin preocuparnos por primary_image todavía)
     let sel = supabase
-        .from("catalogo_v_products_public_search")
-        .select(
-            "id, slug, name, description, effective_show_prices, min_price_visible, primary_image, created_at, updated_at",
-            { count: "exact" },
-        )
-        .order("created_at", { ascending: false });
+        .from('catalogo_v_products_public')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
 
-    if (rawQ.length >= 2) {
-        // normalizamos query: minúsculas + sin tildes, para matchear con name_search
-        const normalizedQ = rawQ
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
-
-        sel = sel.ilike("name_search", `%${normalizedQ}%`);
+    if (q.length >= 2) {
+        sel = sel.ilike('name', `%${q}%`);
     }
-
     if (productIdsFilter) {
-        sel = sel.in("id", productIdsFilter);
+        sel = sel.in('id', productIdsFilter);
     }
 
     sel = sel.range(from, to);
@@ -232,8 +238,42 @@ export async function searchProducts(args: SearchArgs): Promise<SearchResult> {
     const { data, error, count } = await sel;
     if (error) throw error;
 
+    const items = (data ?? []) as ProductPublic[];
+
+    // 🔎 Fallback: si la vista no está rellenando primary_image,
+    // la resolvemos desde catalogo_images tomando la principal por producto.
+    const productIds = items.map((p) => p.id);
+    if (productIds.length) {
+        const { data: imgRows, error: imgErr } = await supabase
+            .from('catalogo_images')
+            .select('product_id, path, is_primary, position')
+            .in('product_id', productIds)
+            .order('is_primary', { ascending: false })
+            .order('position', { ascending: true });
+
+        if (imgErr) throw imgErr;
+
+        const primaryByProduct: Record<string, string> = {};
+        for (const row of imgRows ?? []) {
+            const r = row as {
+                product_id: string;
+                path: string;
+                is_primary: boolean | null;
+                position: number | null;
+            };
+            if (!primaryByProduct[r.product_id]) {
+                primaryByProduct[r.product_id] = r.path;
+            }
+        }
+
+        // Mutamos el array en memoria para que ProductCard pueda usar primary_image
+        for (const item of items) {
+            item.primary_image = primaryByProduct[item.id] ?? item.primary_image ?? null;
+        }
+    }
+
     return {
-        items: (data ?? []) as ProductPublic[],
+        items,
         total: count ?? 0,
         page,
         perPage,

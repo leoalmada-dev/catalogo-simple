@@ -1,3 +1,4 @@
+/* app/globals.css */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -45,7 +46,10 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+
+  /* 🔧 Fondo general: gris muy claro (se diferencia del blanco de las cards) */
+  --background: oklch(0.97 0.001 286.0);
+
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -114,16 +118,10 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
   }
 
   body {
     @apply bg-background text-foreground;
-  }
-
-  /* Focus visible global accesible y consistente */
-  *:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
   }
 }

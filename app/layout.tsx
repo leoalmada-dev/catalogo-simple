@@ -26,8 +26,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   alternates: { canonical: "/" },
-  authors: [{ name: AUTHOR_NAME }],
-  creator: AUTHOR_NAME,
+  authors: [{ name: "Leonardo Almada" }],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -49,14 +48,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <meta name="author" content={AUTHOR_NAME} />
 
-        {/* JSON-LD */}
+        {/* JSON-LD global */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
       </head>
 
-      <body className="min-h-dvh bg-white text-neutral-900 antialiased">
+      {/* Sticky layout + tamaño de texto un poco mayor en desktop */}
+      <body className="flex min-h-dvh flex-col antialiased text-[15px] sm:text-base">
         {/* Skip link accesible */}
         <a
           href="#main-content"
@@ -69,12 +69,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <main
           id="main-content"
-          className="mx-auto max-w-6xl p-4 outline-none focus-visible:ring-2 focus-visible:ring-neutral-800"
+          className="mx-auto flex-1 w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8 outline-none focus-visible:ring-2 focus-visible:ring-neutral-800"
         >
           {children}
         </main>
 
         <SiteFooter />
+
         <UtmCapture />
       </body>
     </html>

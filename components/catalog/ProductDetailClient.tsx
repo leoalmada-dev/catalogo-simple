@@ -1,9 +1,9 @@
 // components/catalog/ProductDetailClient.tsx
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import { buildWaTrackingUrl } from "@/lib/whatsapp";
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import { buildWaTrackingUrl } from '@/lib/whatsapp';
 
 type ProductImage = {
     url: string;
@@ -25,23 +25,23 @@ type ProductDetailClientProps = {
         name: string;
         slug: string;
         description: string | null;
-        min_price_visible: number | null;
+        min_price_cents: number | null;
+        effective_show_prices: boolean;
     };
     gallery: ProductImage[];
     variants: Variant[];
     currencyCode: string;
-    showPrices: boolean;
 };
 
 function formatMoney(cents: number, currency: string) {
     const value = (cents ?? 0) / 100;
     try {
-        return new Intl.NumberFormat("es-UY", {
-            style: "currency",
+        return new Intl.NumberFormat('es-UY', {
+            style: 'currency',
             currency,
         }).format(value);
     } catch {
-        return `${value.toLocaleString("es-UY")} ${currency}`;
+        return `${value.toLocaleString('es-UY')} ${currency}`;
     }
 }
 
@@ -50,10 +50,8 @@ export default function ProductDetailClient({
     gallery,
     variants,
     currencyCode,
-    showPrices,
 }: ProductDetailClientProps) {
     // 👉 Si hay solo 1 variante, la seleccionamos de entrada.
-    // Si hay 0 o más de 1, arrancamos sin selección.
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
         variants.length === 1 ? variants[0].id : null,
     );
@@ -73,21 +71,20 @@ export default function ProductDetailClient({
     const waHref = buildWaTrackingUrl({
         productId: product.id,
         productSlug: product.slug,
-        source: "product",
+        source: 'product',
         variantId: selectedVariant?.id,
         productName: product.name,
         variantLabel: selectedVariant?.name ?? undefined,
     });
 
-    const showStockInfo =
-        selectedVariant && typeof selectedVariant.stock === "number";
+    const showPrices = product.effective_show_prices;
 
     const stockLabel =
-        !selectedVariant || typeof selectedVariant.stock !== "number"
+        !selectedVariant || typeof selectedVariant.stock !== 'number'
             ? null
             : selectedVariant.stock > 0
-                ? `Stock: ${selectedVariant.stock}`
-                : "Sin stock";
+                ? null // solo mostramos cuando NO hay stock
+                : 'Sin stock';
 
     // Si hay variantes pero ninguna seleccionada, deshabilitamos el CTA
     const ctaDisabled = hasVariants && !selectedVariant;
@@ -101,16 +98,20 @@ export default function ProductDetailClient({
         const name = variant.name?.trim();
         if (!name) return;
 
-        const lowerName = name.toLowerCase();
+        const altCandidates = [name, variant.sku].filter(Boolean).map((s) => s!.toLowerCase());
 
-        const matchIndex = gallery.findIndex((img) =>
-            img.alt.toLowerCase().includes(lowerName),
-        );
+        const matchIndex = gallery.findIndex((img) => {
+            const altLower = img.alt.toLowerCase();
+            return altCandidates.some((c) => altLower.includes(c));
+        });
 
         if (matchIndex >= 0) {
             setActiveImageIndex(matchIndex);
         }
     }
+
+    const canShowHeaderPrice =
+        showPrices && product.min_price_cents != null && product.min_price_cents > 0;
 
     return (
         <article
@@ -153,11 +154,11 @@ export default function ProductDetailClient({
                                 >
                                     <div
                                         className={[
-                                            "relative aspect-square overflow-hidden rounded-xl bg-neutral-50 border-2",
+                                            'relative aspect-square overflow-hidden rounded-xl bg-neutral-50 border-2',
                                             isActive
-                                                ? "border-neutral-900"
-                                                : "border-transparent group-hover:border-neutral-400",
-                                        ].join(" ")}
+                                                ? 'border-neutral-900'
+                                                : 'border-transparent group-hover:border-neutral-400',
+                                        ].join(' ')}
                                     >
                                         <Image
                                             src={img.url}
@@ -178,13 +179,10 @@ export default function ProductDetailClient({
             <section className="space-y-4">
                 <h1 className="text-2xl font-semibold">{product.name}</h1>
 
-                {product.min_price_visible != null ? (
+                {canShowHeaderPrice ? (
                     <p className="text-xl font-medium">
-                        Desde{" "}
-                        {new Intl.NumberFormat("es-UY", {
-                            style: "currency",
-                            currency: currencyCode,
-                        }).format(Number(product.min_price_visible))}
+                        Desde{' '}
+                        {formatMoney(product.min_price_cents!, currencyCode)}
                     </p>
                 ) : (
                     <p className="text-sm text-neutral-600">Consultar precio</p>
@@ -217,12 +215,12 @@ export default function ProductDetailClient({
                                             type="button"
                                             onClick={() => handleVariantClick(v)}
                                             className={[
-                                                "rounded-full border px-3 py-1 text-xs transition",
+                                                'rounded-full border px-3 py-1 text-xs transition',
                                                 isActive
-                                                    ? "border-neutral-900 bg-neutral-900 text-white"
-                                                    : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-500",
-                                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                                            ].join(" ")}
+                                                    ? 'border-neutral-900 bg-neutral-900 text-white'
+                                                    : 'border-neutral-300 bg-white text-neutral-800 hover:border-neutral-500',
+                                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                                            ].join(' ')}
                                             aria-pressed={isActive}
                                         >
                                             {label}
@@ -262,7 +260,7 @@ export default function ProductDetailClient({
                                 </p>
                             )}
 
-                            {showStockInfo && stockLabel && (
+                            {stockLabel && (
                                 <p className="text-xs text-neutral-600">{stockLabel}</p>
                             )}
                         </div>
@@ -280,20 +278,21 @@ export default function ProductDetailClient({
                         }
                     }}
                     className={[
-                        "inline-flex w-full items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition",
-                        "hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                        ctaDisabled ? "pointer-events-none opacity-60" : "",
-                    ].join(" ")}
+                        'inline-flex w-full items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition',
+                        'hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                        ctaDisabled ? 'pointer-events-none opacity-60' : '',
+                    ].join(' ')}
                     aria-disabled={ctaDisabled}
                     aria-label={
                         ctaDisabled
                             ? `Seleccioná una variante para consultar por WhatsApp sobre ${product.name}`
                             : selectedVariant
-                                ? `Consultar por WhatsApp sobre ${product.name} - variante ${selectedVariant.name || selectedVariant.sku}`
+                                ? `Consultar por WhatsApp sobre ${product.name} - variante ${selectedVariant.name || selectedVariant.sku
+                                }`
                                 : `Consultar por WhatsApp sobre ${product.name}`
                     }
                 >
-                    {ctaDisabled ? "Seleccioná una variante" : "Consultar por WhatsApp"}
+                    {ctaDisabled ? 'Seleccioná una variante' : 'Consultar por WhatsApp'}
                 </a>
             </section>
         </article>
