@@ -10,7 +10,10 @@ export async function POST(req: Request) {
 
         if (!parsed.success) {
             return NextResponse.json(
-                { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." },
+                {
+                    ok: false,
+                    message: parsed.error.issues[0]?.message ?? "Datos inválidos.",
+                },
                 { status: 400 }
             );
         }
@@ -32,18 +35,27 @@ export async function POST(req: Request) {
         );
 
         if (error) {
-            // Evitamos filtrar detalle sensible; mensaje genérico.
+            // DEBUG: ver el motivo real en server logs (NO se expone al cliente)
+            console.error("[resetPasswordForEmail] redirectTo=", redirectTo);
+            console.error("[resetPasswordForEmail] error=", error);
+
             return NextResponse.json(
-                { ok: false, message: "No se pudo enviar el email de restablecimiento. Intentá de nuevo." },
+                {
+                    ok: false,
+                    message:
+                        "No se pudo enviar el email de restablecimiento. Intentá de nuevo.",
+                },
                 { status: 400 }
             );
         }
 
         return NextResponse.json({
             ok: true,
-            message: "Si el email existe, te vamos a enviar un enlace para restablecer la contraseña.",
+            message:
+                "Si el email existe, te vamos a enviar un enlace para restablecer la contraseña.",
         });
-    } catch {
+    } catch (e) {
+        console.error("[api/admin/auth/reset] unexpected error:", e);
         return NextResponse.json(
             { ok: false, message: "Error inesperado. Intentá de nuevo." },
             { status: 500 }

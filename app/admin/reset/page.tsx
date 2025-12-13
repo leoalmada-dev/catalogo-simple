@@ -5,13 +5,33 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useId, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resetConfirmSchema } from "@/lib/validation/auth";
+
+type HashParams = {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: string;
+    token_type?: string;
+    type?: string;
+};
+
+function parseHashParams(hash: string): HashParams {
+    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+    const params = new URLSearchParams(raw);
+    return {
+        access_token: params.get("access_token") ?? undefined,
+        refresh_token: params.get("refresh_token") ?? undefined,
+        expires_in: params.get("expires_in") ?? undefined,
+        token_type: params.get("token_type") ?? undefined,
+        type: params.get("type") ?? undefined,
+    };
+}
 
 export default function AdminResetPage() {
     const router = useRouter();
@@ -23,10 +43,11 @@ export default function AdminResetPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
 
     const [pending, setPending] = useState(false);
+    const [validating, setValidating] = useState(true);
     const [status, setStatus] = useState<{
-        type: "idle" | "success" | "error";
+        type: "idle" | "success" | "error" | "info";
         message: string;
-    }>({ type: "idle", message: "" });
+    }>({ type: "info", message: "Validando enlace…" });
 
     const liveRegionRef = useRef<HTMLParagraphElement | null>(null);
 
@@ -35,6 +56,76 @@ export default function AdminResetPage() {
             liveRegionRef.current?.focus();
         });
     };
+
+    // 1) Al cargar: consumir token del hash (#access_token=...) y guardar sesión con setSession().
+    useEffect(() => {
+        const run = async () => {
+            try {
+                const supabase = createBrowserClient();
+
+                // Si viene hash con access_token/refresh_token, lo usamos para setear la sesión.
+                const hash = typeof window !== "undefined" ? window.location.hash : "";
+                const { access_token, refresh_token, type } = parseHashParams(hash);
+
+                if (access_token && refresh_token && type === "recovery") {
+                    const { error } = await supabase.auth.setSession({
+                        access_token,
+                        refresh_token,
+                    });
+
+                    if (error) {
+                        console.error("[reset] setSession error:", error);
+                        setStatus({
+                            type: "error",
+                            message:
+                                "Este enlace no es válido o venció. Volvé a solicitar el restablecimiento.",
+                        });
+                        toast.error("Enlace inválido o vencido.");
+                        setValidating(false);
+                        focusStatus();
+                        return;
+                    }
+
+                    // Limpieza: sacar el hash de la URL (evita compartir tokens accidentalmente)
+                    window.history.replaceState(
+                        window.history.state,
+                        "",
+                        window.location.pathname + window.location.search
+                    );
+                }
+
+                // Verificar que efectivamente hay usuario
+                const { data: userData, error: userErr } = await supabase.auth.getUser();
+
+                if (userErr || !userData?.user) {
+                    setStatus({
+                        type: "error",
+                        message:
+                            "Este enlace no es válido o venció. Volvé a solicitar el restablecimiento.",
+                    });
+                    toast.error("Enlace inválido o vencido.");
+                    setValidating(false);
+                    focusStatus();
+                    return;
+                }
+
+                setStatus({ type: "idle", message: "" });
+                setValidating(false);
+            } catch (e) {
+                console.error("[reset] unexpected:", e);
+                setStatus({
+                    type: "error",
+                    message:
+                        "No pudimos validar el enlace. Volvé a solicitar el restablecimiento.",
+                });
+                toast.error("No pudimos validar el enlace.");
+                setValidating(false);
+                focusStatus();
+            }
+        };
+
+        void run();
+    }, []);
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -54,8 +145,8 @@ export default function AdminResetPage() {
         try {
             const supabase = createBrowserClient();
 
-            const { data, error: userErr } = await supabase.auth.getUser();
-            if (userErr || !data?.user) {
+            const { data: userData, error: userErr } = await supabase.auth.getUser();
+            if (userErr || !userData?.user) {
                 const message =
                     "Este enlace no es válido o venció. Volvé a solicitar el restablecimiento.";
                 setStatus({ type: "error", message });
@@ -69,6 +160,7 @@ export default function AdminResetPage() {
             });
 
             if (error) {
+                console.error("[reset] updateUser error:", error);
                 const message =
                     "No se pudo actualizar la contraseña. Intentá de nuevo.";
                 setStatus({ type: "error", message });
@@ -86,7 +178,8 @@ export default function AdminResetPage() {
             setTimeout(() => {
                 router.replace("/admin/(public)/login");
             }, 900);
-        } catch {
+        } catch (e) {
+            console.error("[reset] unexpected submit:", e);
             const message = "Error inesperado. Intentá de nuevo.";
             setStatus({ type: "error", message });
             toast.error(message);
@@ -98,6 +191,9 @@ export default function AdminResetPage() {
 
     const isError = status.type === "error";
     const isSuccess = status.type === "success";
+    const isInfo = status.type === "info";
+
+    const disableForm = pending || validating || isInfo;
 
     return (
         <div className="mx-auto mt-24 mb-20 max-w-sm">
@@ -116,6 +212,7 @@ export default function AdminResetPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        disabled={disableForm}
                     />
                     <p className="text-xs text-muted-foreground">Mínimo 10 caracteres.</p>
                 </div>
@@ -129,10 +226,11 @@ export default function AdminResetPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
+                        disabled={disableForm}
                     />
                 </div>
 
-                {(isError || isSuccess) && (
+                {(isError || isSuccess || isInfo) && (
                     <p
                         ref={liveRegionRef}
                         tabIndex={-1}
@@ -140,7 +238,9 @@ export default function AdminResetPage() {
                             "rounded-md border px-3 py-2 text-sm outline-none",
                             isError
                                 ? "border-red-200 text-red-700"
-                                : "border-emerald-200 text-emerald-700",
+                                : isSuccess
+                                    ? "border-emerald-200 text-emerald-700"
+                                    : "border-border text-foreground",
                         ].join(" ")}
                         role={isError ? "alert" : "status"}
                         aria-live="polite"
@@ -149,8 +249,8 @@ export default function AdminResetPage() {
                     </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={pending}>
-                    {pending ? "Guardando…" : "Guardar nueva contraseña"}
+                <Button type="submit" className="w-full" disabled={disableForm}>
+                    {validating ? "Validando…" : pending ? "Guardando…" : "Guardar nueva contraseña"}
                 </Button>
 
                 <div className="flex items-center justify-between text-sm">
