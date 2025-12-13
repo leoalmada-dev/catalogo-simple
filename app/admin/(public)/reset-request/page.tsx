@@ -18,15 +18,14 @@ export default function ResetRequestPage() {
 
     const [email, setEmail] = useState("");
     const [pending, setPending] = useState(false);
-    const [status, setStatus] = useState<{ type: "idle" | "success" | "error"; message: string }>({
-        type: "idle",
-        message: "",
-    });
+    const [status, setStatus] = useState<{
+        type: "idle" | "success" | "error";
+        message: string;
+    }>({ type: "idle", message: "" });
 
     const liveRegionRef = useRef<HTMLParagraphElement | null>(null);
 
     const focusStatus = () => {
-        // foco accesible al mensaje para anunciar cambios post-submit
         requestAnimationFrame(() => {
             liveRegionRef.current?.focus();
         });
@@ -63,7 +62,6 @@ export default function ResetRequestPage() {
                 return;
             }
 
-            // Mensaje intencionalmente ambiguo para no filtrar existencia de cuentas
             setStatus({ type: "success", message: data.message });
             toast.success("Listo. Revisá tu correo.");
             focusStatus();
@@ -127,8 +125,8 @@ export default function ResetRequestPage() {
 
                 <div className="flex items-center justify-between text-sm">
                     <Link
-                        href="/admin/(public)/login"
-                        className="underline underline-offset-4 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                        href="/admin/login"
+                        className="rounded-sm underline underline-offset-4 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                         Volver a iniciar sesión
                     </Link>
