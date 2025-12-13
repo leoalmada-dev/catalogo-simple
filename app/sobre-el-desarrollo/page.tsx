@@ -196,7 +196,7 @@ export default function SobreElDesarrolloPage() {
                 <h2 className="text-lg font-semibold">Sobre mí y contacto</h2>
                 <p className="text-sm text-neutral-700">
                     Soy <span className="font-medium text-neutral-900">Leonardo Almada</span>,
-                    desarrollador frontend. Me interesa construir productos que combinen:
+                    desarrollador full-stack. Me interesa construir productos que combinen:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
                     <li>Experiencias claras y simples para el usuario final.</li>

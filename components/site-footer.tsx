@@ -1,7 +1,7 @@
 // components/site-footer.tsx
 import Link from "next/link";
 
-const AUTHOR_NAME = "Leonardo Almada";
+const AUTHOR_NAME = "L.A Developer";
 const AUTHOR_EMAIL = "leoalmada-dev@gmail.com";
 
 export default function SiteFooter() {
