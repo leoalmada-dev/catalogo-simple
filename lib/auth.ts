@@ -17,12 +17,12 @@ export async function requireAdmin() {
   const lastLoginTs = lastLoginRaw ? Number(lastLoginRaw) : NaN;
 
   if (!Number.isFinite(lastLoginTs)) {
-    redirect("/admin/(public)/login");
+    redirect("/admin/login");
   }
 
   const now = Date.now();
   if (now - lastLoginTs > ADMIN_SESSION_TTL_MS) {
-    redirect("/admin/(public)/login");
+    redirect("/admin/login");
   }
 
   // 2) Validación de usuario y rol en Supabase
@@ -31,7 +31,7 @@ export async function requireAdmin() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/admin/(public)/login");
+  if (!user) redirect("/admin/login");
 
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -65,7 +65,7 @@ export async function requireAdmin() {
     !!profileRole && accepted.includes(profileRole.toLowerCase());
 
   if (!(byEmail || hasAdminRole)) {
-    redirect("/admin/(public)/login");
+    redirect("/admin/login");
   }
 
   return { user, role: profileRole ?? null };

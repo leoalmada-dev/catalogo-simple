@@ -57,13 +57,11 @@ export default function AdminResetPage() {
         });
     };
 
-    // 1) Al cargar: consumir token del hash (#access_token=...) y guardar sesión con setSession().
     useEffect(() => {
         const run = async () => {
             try {
                 const supabase = createBrowserClient();
 
-                // Si viene hash con access_token/refresh_token, lo usamos para setear la sesión.
                 const hash = typeof window !== "undefined" ? window.location.hash : "";
                 const { access_token, refresh_token, type } = parseHashParams(hash);
 
@@ -86,7 +84,6 @@ export default function AdminResetPage() {
                         return;
                     }
 
-                    // Limpieza: sacar el hash de la URL (evita compartir tokens accidentalmente)
                     window.history.replaceState(
                         window.history.state,
                         "",
@@ -94,7 +91,6 @@ export default function AdminResetPage() {
                     );
                 }
 
-                // Verificar que efectivamente hay usuario
                 const { data: userData, error: userErr } = await supabase.auth.getUser();
 
                 if (userErr || !userData?.user) {
@@ -176,7 +172,7 @@ export default function AdminResetPage() {
             toast.success("Contraseña actualizada.");
 
             setTimeout(() => {
-                router.replace("/admin/(public)/login");
+                router.replace("/admin/login");
             }, 900);
         } catch (e) {
             console.error("[reset] unexpected submit:", e);
@@ -250,19 +246,23 @@ export default function AdminResetPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={disableForm}>
-                    {validating ? "Validando…" : pending ? "Guardando…" : "Guardar nueva contraseña"}
+                    {validating
+                        ? "Validando…"
+                        : pending
+                            ? "Guardando…"
+                            : "Guardar nueva contraseña"}
                 </Button>
 
                 <div className="flex items-center justify-between text-sm">
                     <Link
-                        href="/admin/(public)/reset-request"
+                        href="/admin/reset-request"
                         className="rounded-sm underline underline-offset-4 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                         Volver a pedir el enlace
                     </Link>
 
                     <Link
-                        href="/admin/(public)/login"
+                        href="/admin/login"
                         className="rounded-sm underline underline-offset-4 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                         Ir al login
