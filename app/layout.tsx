@@ -6,6 +6,7 @@ import SiteFooter from "@/components/site-footer";
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/env";
 import UtmCapture from "@/components/analytics/UtmCapture";
+import { Toaster } from "@/components/ui/sonner";
 
 const SITE_NAME = "Pantera mini mayorista";
 const SITE_DESCRIPTION = "Catálogo de Pantera mini mayorista 🐆";
@@ -75,7 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </main>
 
         <SiteFooter />
-
+        <Toaster />
         <UtmCapture />
       </body>
     </html>

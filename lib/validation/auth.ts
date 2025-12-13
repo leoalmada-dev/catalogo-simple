@@ -11,4 +11,22 @@ export const resetRequestSchema = z.object({
     email: emailSchema,
 });
 
-// (para Bloque 2 lo extendemos con password/confirm)
+export const passwordSchema = z
+    .string()
+    .min(10, "La contraseña debe tener al menos 10 caracteres.")
+    .max(72, "La contraseña es demasiado larga."); // límite práctico (bcrypt/otros)
+
+export const resetConfirmSchema = z
+    .object({
+        password: passwordSchema,
+        confirmPassword: z.string(),
+    })
+    .superRefine(({ password, confirmPassword }, ctx) => {
+        if (password !== confirmPassword) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["confirmPassword"],
+                message: "Las contraseñas no coinciden.",
+            });
+        }
+    });
