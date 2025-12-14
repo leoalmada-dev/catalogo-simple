@@ -3,9 +3,11 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 horas
 
@@ -51,11 +53,13 @@ export default function LoginPage() {
   return (
     <div className="mx-auto mt-24 mb-20 max-w-sm">
       <h1 className="mb-4 text-xl font-semibold">Acceder al panel</h1>
+
       <form onSubmit={onSubmit} className="space-y-3">
-        <div>
+        <div className="space-y-1">
+          <Label htmlFor="email">Email</Label>
           <Input
+            id="email"
             type="email"
-            placeholder="Email"
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -63,10 +67,11 @@ export default function LoginPage() {
           />
         </div>
 
-        <div>
+        <div className="space-y-1">
+          <Label htmlFor="password">Contraseña</Label>
           <Input
+            id="password"
             type="password"
-            placeholder="Password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -75,14 +80,21 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <p className="text-sm text-red-600">{errorMsg}</p>
+          <p className="text-sm text-red-600" role="alert" aria-live="polite">
+            {errorMsg}
+          </p>
         )}
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={pending}
-        >
+        <div className="flex items-center justify-end">
+          <Link
+            href="/admin/reset-request"
+            className="rounded-sm text-sm underline underline-offset-4 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
+
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Ingresando…" : "Entrar"}
         </Button>
       </form>
