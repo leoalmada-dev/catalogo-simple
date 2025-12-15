@@ -2,14 +2,18 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useId, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { emailSchema } from "@/lib/validation/auth";
 
-type ApiResponse = { ok: boolean; message: string };
+type ApiResponse = { ok: boolean; message: string; retryAfterSeconds?: number };
+
+function clampInt(n: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, Math.trunc(n)));
+}
 
 export default function ResetRequestPage() {
     const emailId = useId();
@@ -18,6 +22,9 @@ export default function ResetRequestPage() {
 
     const [email, setEmail] = useState("");
     const [pending, setPending] = useState(false);
+
+    const [cooldown, setCooldown] = useState(0);
+
     const [status, setStatus] = useState<{
         type: "idle" | "success" | "error";
         message: string;
@@ -29,6 +36,18 @@ export default function ResetRequestPage() {
         requestAnimationFrame(() => {
             liveRegionRef.current?.focus();
         });
+    };
+
+    useEffect(() => {
+        if (cooldown <= 0) return;
+        const t = window.setInterval(() => {
+            setCooldown((s) => (s > 0 ? s - 1 : 0));
+        }, 1000);
+        return () => window.clearInterval(t);
+    }, [cooldown]);
+
+    const startCooldown = (seconds: number) => {
+        setCooldown(clampInt(seconds, 5, 60));
     };
 
     const onSubmit = async (e: FormEvent) => {
@@ -55,18 +74,28 @@ export default function ResetRequestPage() {
             const data = (await res.json().catch(() => null)) as ApiResponse | null;
 
             if (!res.ok || !data?.ok) {
-                const message = data?.message ?? "No se pudo enviar el email. Intentá de nuevo.";
+                // UX: si nos informan retryAfterSeconds lo usamos; sino, aplicamos 20s por defecto
+                const retry = data?.retryAfterSeconds ?? 20;
+                startCooldown(retry);
+
+                const message =
+                    data?.message ??
+                    "No se pudo enviar el email. Esperá unos segundos e intentá de nuevo.";
                 setStatus({ type: "error", message });
                 toast.error(message);
                 focusStatus();
                 return;
             }
 
+            // Para evitar spam: también cooldown tras éxito (por si hacen click varias veces)
+            startCooldown(20);
+
             setStatus({ type: "success", message: data.message });
             toast.success("Listo. Revisá tu correo.");
             focusStatus();
         } catch {
-            const message = "Error inesperado. Intentá de nuevo.";
+            startCooldown(20);
+            const message = "Error inesperado. Esperá unos segundos e intentá de nuevo.";
             setStatus({ type: "error", message });
             toast.error(message);
             focusStatus();
@@ -77,6 +106,14 @@ export default function ResetRequestPage() {
 
     const isError = status.type === "error";
     const isSuccess = status.type === "success";
+
+    const disabled = pending || cooldown > 0;
+
+    const buttonText = pending
+        ? "Enviando…"
+        : cooldown > 0
+            ? `Reintentar en ${cooldown}s…`
+            : "Enviar enlace";
 
     return (
         <div className="mx-auto mt-24 mb-20 max-w-sm">
@@ -97,6 +134,7 @@ export default function ResetRequestPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         aria-describedby={hintId}
                         required
+                        disabled={disabled}
                     />
                     <p id={hintId} className="text-xs text-muted-foreground">
                         Si no llega en unos minutos, revisá spam/promociones.
@@ -110,7 +148,9 @@ export default function ResetRequestPage() {
                         tabIndex={-1}
                         className={[
                             "rounded-md border px-3 py-2 text-sm outline-none",
-                            isError ? "border-red-200 text-red-700" : "border-emerald-200 text-emerald-700",
+                            isError
+                                ? "border-red-200 text-red-700"
+                                : "border-emerald-200 text-emerald-700",
                         ].join(" ")}
                         role={isError ? "alert" : "status"}
                         aria-live="polite"
@@ -119,8 +159,8 @@ export default function ResetRequestPage() {
                     </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={pending}>
-                    {pending ? "Enviando…" : "Enviar enlace"}
+                <Button type="submit" className="w-full" disabled={disabled}>
+                    {buttonText}
                 </Button>
 
                 <div className="flex items-center justify-between text-sm">
