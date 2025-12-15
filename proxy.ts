@@ -7,13 +7,11 @@ const isProd =
 export function proxy(req: NextRequest) {
   const res = NextResponse.next();
 
-  // Previews / Dev: bloquear indexación globalmente
   if (!isProd) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
     return res;
   }
 
-  // Producción: reforzar noindex en /admin
   if (req.nextUrl.pathname.startsWith("/admin")) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;
@@ -21,3 +19,7 @@ export function proxy(req: NextRequest) {
 
   return res;
 }
+
+export const config = {
+  matcher: ["/((?!_next/|favicon.ico|robots.txt|sitemap.xml|api/health).*)"],
+};
