@@ -1,8 +1,9 @@
+// app/w/route.ts
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 import { UTM_COOKIE_NAME, parseUtmCookie } from '@/lib/utm';
 import { sanitizePhone, buildWaMessage } from '@/lib/whatsapp';
 import { WHATSAPP_PHONE, SITE_URL } from '@/lib/env';
@@ -38,18 +39,19 @@ export async function GET(req: NextRequest) {
             utm_medium: utm?.utm_medium ?? null,
             utm_campaign: utm?.utm_campaign ?? null,
             ref: utm?.ref ?? null,
-            ip_hash: ip_hash,
+            ip_hash,
             ua,
         });
     } catch {
-        // no romper el flujo si el log falla
+        // No romper el flujo si el log falla
     }
 
     // 5) Redirigir a wa.me con mensaje
     const phone = sanitizePhone(WHATSAPP_PHONE || '');
     if (!phone) {
-        // fallback: redirigimos al producto si no hay teléfono
-        const fallback = productSlug ? `${SITE_URL}/producto/${productSlug}` : `${SITE_URL}/`;
+        const fallback = productSlug
+            ? `${SITE_URL}/producto/${productSlug}`
+            : `${SITE_URL}/`;
         return NextResponse.redirect(fallback, { status: 302 });
     }
 
@@ -68,5 +70,7 @@ export async function GET(req: NextRequest) {
 async function sha256(input: string) {
     const enc = new TextEncoder().encode(input);
     const buf = await crypto.subtle.digest('SHA-256', enc);
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
 }
