@@ -3,6 +3,16 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resetRequestSchema } from "@/lib/validation/auth";
 
+type SbErr = { name?: string; status?: number; message?: string; code?: string };
+
+function extractRetryAfterSeconds(message?: string): number | null {
+    if (!message) return null;
+    const m = message.match(/after\s+(\d+)\s+seconds/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) ? n : null;
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.json().catch(() => ({}));
@@ -32,14 +42,30 @@ export async function POST(req: Request) {
         });
 
         if (error) {
-            // Log seguro (solo server) para diagnosticar en Vercel
+            const e = error as SbErr;
+
             console.error("[auth/reset] redirectTo=", redirectTo);
             console.error("[auth/reset] supabase error:", {
-                name: (error as { name?: string }).name,
-                status: (error as { status?: number }).status,
-                message: (error as { message?: string }).message,
-                code: (error as { code?: string }).code,
+                name: e.name,
+                status: e.status,
+                message: e.message,
+                code: e.code,
             });
+
+            const isRateLimit =
+                e.status === 429 || e.code === "over_email_send_rate_limit";
+
+            if (isRateLimit) {
+                const seconds = extractRetryAfterSeconds(e.message) ?? 20;
+                return NextResponse.json(
+                    {
+                        ok: false,
+                        retryAfterSeconds: seconds,
+                        message: `Por seguridad, esperá ${seconds}s y volvé a intentar.`,
+                    },
+                    { status: 429 }
+                );
+            }
 
             return NextResponse.json(
                 { ok: false, message: "No se pudo enviar el email de restablecimiento. Intentá de nuevo." },
