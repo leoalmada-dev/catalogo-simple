@@ -10,16 +10,14 @@ export async function POST(req: Request) {
 
         if (!parsed.success) {
             return NextResponse.json(
-                {
-                    ok: false,
-                    message: parsed.error.issues[0]?.message ?? "Datos inválidos.",
-                },
+                { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." },
                 { status: 400 }
             );
         }
 
         const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim();
         if (!siteUrl) {
+            console.error("[auth/reset] Missing NEXT_PUBLIC_SITE_URL");
             return NextResponse.json(
                 { ok: false, message: "Falta configurar NEXT_PUBLIC_SITE_URL." },
                 { status: 500 }
@@ -29,33 +27,32 @@ export async function POST(req: Request) {
         const redirectTo = `${siteUrl.replace(/\/$/, "")}/admin/reset`;
 
         const supabaseAdmin = createAdminClient();
-        const { error } = await supabaseAdmin.auth.resetPasswordForEmail(
-            parsed.data.email,
-            { redirectTo }
-        );
+        const { error } = await supabaseAdmin.auth.resetPasswordForEmail(parsed.data.email, {
+            redirectTo,
+        });
 
         if (error) {
-            // DEBUG: ver el motivo real en server logs (NO se expone al cliente)
-            console.error("[resetPasswordForEmail] redirectTo=", redirectTo);
-            console.error("[resetPasswordForEmail] error=", error);
+            // Log seguro (solo server) para diagnosticar en Vercel
+            console.error("[auth/reset] redirectTo=", redirectTo);
+            console.error("[auth/reset] supabase error:", {
+                name: (error as { name?: string }).name,
+                status: (error as { status?: number }).status,
+                message: (error as { message?: string }).message,
+                code: (error as { code?: string }).code,
+            });
 
             return NextResponse.json(
-                {
-                    ok: false,
-                    message:
-                        "No se pudo enviar el email de restablecimiento. Intentá de nuevo.",
-                },
+                { ok: false, message: "No se pudo enviar el email de restablecimiento. Intentá de nuevo." },
                 { status: 400 }
             );
         }
 
         return NextResponse.json({
             ok: true,
-            message:
-                "Si el email existe, te vamos a enviar un enlace para restablecer la contraseña.",
+            message: "Si el email existe, te vamos a enviar un enlace para restablecer la contraseña.",
         });
     } catch (e) {
-        console.error("[api/admin/auth/reset] unexpected error:", e);
+        console.error("[auth/reset] unexpected:", e);
         return NextResponse.json(
             { ok: false, message: "Error inesperado. Intentá de nuevo." },
             { status: 500 }
